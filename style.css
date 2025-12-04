@@ -1,0 +1,210 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root{
+    --bg: #101010;
+    --panel: #141414;
+    --muted: #999;
+    /* darker greens for a richer dark-theme look */
+    --accent: #155e3b;    /* darker green (emerald-like) */
+    --accent-2: #0f4a2f;  /* even darker on hover/active */
+    --danger: #ef4444;
+    --card: #1e1e1e;
+    --count-gray: #cfcfcf; /* grey tone for counters */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    color: #fff;
+}
+
+.container {
+    width: 100%;
+    max-width: 980px;
+    display: flex;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 760px) {
+    .container {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+.panel {
+    background: transparent;
+    padding: 0.5rem;
+}
+
+/* Counter panel */
+.panel-counter {
+    flex: 1 1 60%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+/* Big, clean counter number */
+.counter-display {
+    font-size: 5.5rem;
+    font-weight: 700;
+    color: var(--count-gray);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+
+/* Buttons centered */
+.counter-button {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    background-color: var(--accent);
+    border: none;
+    padding: 1rem 2.25rem;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+    /* updated shadow to match darker green */
+    box-shadow: 0 6px 18px rgba(21,94,59,0.14);
+}
+
+.counter-button:hover { background-color: var(--accent-2); transform: translateY(-2px); }
+.counter-button:active { transform: translateY(0); }
+
+.reset-button {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+    background-color: #2b2b2b;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: background-color 0.12s ease;
+}
+
+.reset-button:hover { background-color: #3b3b3b; }
+
+/* History panel (inline sidebar) */
+.history-section {
+    flex: 0 0 320px;
+    border-left: 1px solid rgba(255,255,255,0.04);
+    padding-left: 1rem;
+}
+
+.history-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.75rem;
+}
+
+.history-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 56vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: var(--card);
+    padding: 0.6rem;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.history-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.history-count {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--count-gray);
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-timestamp {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.history-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.history-btn {
+    background-color: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.history-btn:hover { background-color: var(--accent-2); }
+
+.history-btn-delete {
+    background-color: var(--danger);
+}
+
+.history-btn-delete:hover { background-color: #dc2626; }
+
+.history-input {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--accent);
+    padding: 0.25rem 0.4rem;
+    border-radius: 6px;
+    width: 88px;
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+.history-actions .btn-small {
+    padding: 0.28rem 0.5rem;
+    font-size: 0.82rem;
+}
