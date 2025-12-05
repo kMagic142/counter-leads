@@ -1,21 +1,23 @@
 let count = 0;
-const STORAGE_KEY = 'counterLeadsHistory_v1';
+const API_URL = 'http://localhost:3000/api';
 
 const counterDisplay = document.getElementById('counterDisplay');
 const counterButton = document.getElementById('counterButton');
 const resetButton = document.getElementById('resetButton');
 const historyList = document.getElementById('historyList');
 
-function loadHistory() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+async function loadHistory() {
+    try {
+        const response = await fetch(`${API_URL}/history`);
+        return await response.json();
+    } catch (error) {
+        console.error('Error loading history:', error);
+        return [];
+    }
 }
 
-function saveHistory(history) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-}
-
-function renderHistory() {
-    const history = loadHistory();
+async function renderHistory() {
+    const history = await loadHistory();
     historyList.innerHTML = '';
     history.forEach(item => {
         const li = document.createElement('li');
@@ -47,7 +49,7 @@ function startEdit(li, id, currentCount) {
     const actions = li.querySelector('.history-actions');
     left.innerHTML = `
         <input type="number" class="history-input" value="${currentCount}" min="0" />
-        <div class="history-timestamp">${new Date(loadHistory().find(i => i.id === id).timestamp).toLocaleString()}</div>
+        <div class="history-timestamp">${new Date().toLocaleString()}</div>
     `;
     actions.innerHTML = `
         <button class="history-btn history-btn-save btn-small">Save</button>
@@ -60,34 +62,47 @@ function startEdit(li, id, currentCount) {
     left.querySelector('.history-input').focus();
 }
 
-function saveEdit(li, id) {
+async function saveEdit(li, id) {
     const input = li.querySelector('.history-input');
     if (!input) return;
     const newVal = parseInt(input.value);
     if (Number.isNaN(newVal) || newVal < 0) return;
-    const history = loadHistory();
-    const idx = history.findIndex(i => i.id === id);
-    if (idx === -1) return;
-    history[idx].count = newVal;
-    saveHistory(history);
-    renderHistory();
+    
+    try {
+        await fetch(`${API_URL}/history/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: newVal })
+        });
+        renderHistory();
+    } catch (error) {
+        console.error('Error updating entry:', error);
+    }
 }
 
-function deleteHistoryItem(id) {
-    const history = loadHistory().filter(i => i.id !== id);
-    saveHistory(history);
-    renderHistory();
+async function deleteHistoryItem(id) {
+    try {
+        await fetch(`${API_URL}/history/${id}`, { method: 'DELETE' });
+        renderHistory();
+    } catch (error) {
+        console.error('Error deleting entry:', error);
+    }
 }
 
-function addToHistory(countValue) {
-    const history = loadHistory();
-    history.unshift({
-        id: Date.now(),
-        count: countValue,
-        timestamp: new Date().toISOString()
-    });
-    saveHistory(history);
-    renderHistory();
+async function addToHistory(countValue) {
+    try {
+        await fetch(`${API_URL}/history`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                count: countValue,
+                timestamp: new Date().toISOString()
+            })
+        });
+        renderHistory();
+    } catch (error) {
+        console.error('Error adding entry:', error);
+    }
 }
 
 counterButton.addEventListener('click', () => {
@@ -101,6 +116,6 @@ resetButton.addEventListener('click', () => {
     counterDisplay.textContent = count;
 });
 
-// initialize
+// Initialize
 counterDisplay.textContent = count;
 renderHistory();
