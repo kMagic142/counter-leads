@@ -1,3 +1,47 @@
+.history-nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.nav-btn {
+    position: relative;
+    background: transparent;
+    color: #cfd8dc;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.nav-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+.nav-btn.active {
+    background: rgba(21,94,59,0.18);
+    color: #fff;
+}
+
+.nav-btn::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 4px;
+    height: 3px;
+    background: transparent;
+    border-radius: 2px;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.nav-btn.active::after,
+.nav-btn:hover::after {
+    background: var(--accent);
+    transform: scaleX(1);
+}
 * {
     margin: 0;
     padding: 0;
@@ -125,6 +169,62 @@ body {
     color: #fff;
     margin-bottom: 0.75rem;
 }
+.history-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.history-header .history-title { margin-bottom: 0; }
+.history-total {
+    font-size: 0.9rem;
+    color: #a8ffb0;
+    margin-top: 4px;
+}
+
+    .history-controls {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+    }
+
+    .sync-button {
+        background-color: var(--bg);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        transition: background-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .sync-button:hover { background-color: var(--panel); box-shadow: 0 2px 6px rgba(0,0,0,0.25); transform: translateY(-1px); }
+
+    .sync-icon { display: block; }
+
+.add-button {
+    margin-left: auto; /* push to right */
+    background-color: var(--bg);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    font-size: 18px;
+    line-height: 1;
+    transition: background-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.add-button:hover { background-color: var(--panel); box-shadow: 0 2px 6px rgba(0,0,0,0.25); transform: translateY(-1px); }
 
 .history-list {
     list-style: none;
@@ -207,4 +307,46 @@ body {
 .history-actions .btn-small {
     padding: 0.28rem 0.5rem;
     font-size: 0.82rem;
+}
+
+/* Compact layout overrides */
+body { padding: 0.5rem; }
+.container { gap: 0.8rem; }
+.panel-counter { padding: 0.95rem; }
+.panel-counter { gap: 0.7rem; }
+.history-section { padding-left: 0.6rem; }
+.history-nav { gap: 6px; margin: 6px 0 10px 0; }
+
+/* Center the counter box in the viewport */
+.panel-counter {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(640px, 90vw);
+    z-index: 5;
+}
+
+/* Place history next to the centered counter, scrollable independently */
+.history-section {
+    position: fixed;
+    right: 2vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(360px, 42vw);
+    max-height: 78vh;
+    overflow-y: auto;
+    background: transparent;
+}
+
+@media (max-width: 760px) {
+    .panel-counter {
+        width: 92vw;
+    }
+    .history-section {
+        position: static;
+        transform: none;
+        width: 100%;
+        max-height: 46vh;
+    }
 }
