@@ -198,12 +198,12 @@ async function appendRowToGoogleSheets(count, timestamp) {
         const findCol = (needle) => header.findIndex(h => typeof h === 'string' && norm(h).includes(needle.toLowerCase()));
         const tsCol = findCol('timestamp');
         const totalCol = findCol('numar total leads');
-        const width = Math.max(header.length, Math.max(tsCol + 1, totalCol + 1));
-        const row = Array.from({ length: Math.max(2, width) }, () => '');
+        const width = Math.max(5, header.length, Math.max(tsCol + 1, totalCol + 1));
+        const row = Array.from({ length: width }, () => '');
         const tsString = formatSheetTimestamp(timestamp || new Date());
         if (tsCol >= 0) row[tsCol] = tsString;
         if (totalCol >= 0) row[totalCol] = Number.isFinite(count) ? count : 0;
-        const appendRange = title ? `${title}!A1:Z1` : `A1:Z1`;
+        const appendRange = title ? `${title}!A1:E1` : `A1:E1`;
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
             range: appendRange,
@@ -236,12 +236,12 @@ async function appendCategoryRowToGoogleSheets(categoryName, text, timestamp) {
         };
         const targetCol = colMap[categoryName];
         if (typeof targetCol !== 'number' || targetCol < 0) return false;
-        const width = Math.max(header.length, Math.max(tsCol + 1, targetCol + 1));
-        const row = Array.from({ length: Math.max(2, width) }, () => '');
+        const width = Math.max(5, header.length, Math.max(tsCol + 1, targetCol + 1));
+        const row = Array.from({ length: width }, () => '');
         const tsString = formatSheetTimestamp(timestamp || new Date());
         if (tsCol >= 0) row[tsCol] = tsString;
         row[targetCol] = text || '';
-        const appendRange = title ? `${title}!A1:Z1` : `A1:Z1`;
+        const appendRange = title ? `${title}!A1:E1` : `A1:E1`;
         await sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
             range: appendRange,
