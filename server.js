@@ -47,7 +47,7 @@ async function fetchFromGoogleSheets() {
     if (!sheets) return [];
     try {
         const title = await resolveSheetTitle(sheets);
-        const range = title ? `${title}!A1:Z10000` : `A1:Z10000`;
+        const range = title ? `${title}!A1:E10000` : `A1:E10000`;
         const resp = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
             range
@@ -183,12 +183,56 @@ function formatSheetTimestamp(dInput) {
     return `${month}/${day}/${year} ${hh}:${mm}:${ss}`;
 }
 
+async function writeNextEmptyRowAtoE(valuesAtoE) {
+    const sheets = getSheetsClient();
+    if (!sheets) return false;
+    try {
+        const title = await resolveSheetTitle(sheets);
+        const rangeRead = title ? `${title}!A2:E10000` : `A2:E10000`;
+        const resp = await sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: rangeRead
+        });
+        const rows = resp.data.values || [];
+        const isEmptyRow = (r) => {
+            if (!r || !r.length) return true;
+            return r.every(c => c === undefined || c === null || String(c).trim() === '');
+        };
+        let targetRowNumber = -1;
+        for (let i = 0; i < rows.length; i++) {
+            if (isEmptyRow(rows[i])) {
+                targetRowNumber = i + 2; // because A2 is row 2
+                break;
+            }
+        }
+        if (targetRowNumber === -1) {
+            targetRowNumber = rows.length + 2;
+        }
+
+        const rangeWrite = title
+            ? `${title}!A${targetRowNumber}:E${targetRowNumber}`
+            : `A${targetRowNumber}:E${targetRowNumber}`;
+
+        const fixed = Array.from({ length: 5 }, (_, i) => (valuesAtoE && valuesAtoE[i] !== undefined ? valuesAtoE[i] : ''));
+        await sheets.spreadsheets.values.update({
+            spreadsheetId: SPREADSHEET_ID,
+            range: rangeWrite,
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [fixed] }
+        });
+        return true;
+    } catch (error) {
+        console.error('Error writing next empty row A:E:', error);
+        return false;
+    }
+}
+
 async function appendRowToGoogleSheets(count, timestamp) {
     const sheets = getSheetsClient();
     if (!sheets) return false;
     try {
         const title = await resolveSheetTitle(sheets);
-        const headerRange = title ? `${title}!A1:Z1` : `A1:Z1`;
+        const headerRange = title ? `${title}!A1:E1` : `A1:E1`;
         const headerResp = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,
             range: headerRange
@@ -198,20 +242,12 @@ async function appendRowToGoogleSheets(count, timestamp) {
         const findCol = (needle) => header.findIndex(h => typeof h === 'string' && norm(h).includes(needle.toLowerCase()));
         const tsCol = findCol('timestamp');
         const totalCol = findCol('numar total leads');
-        const width = Math.max(5, header.length, Math.max(tsCol + 1, totalCol + 1));
-        const row = Array.from({ length: width }, () => '');
+        const row = Array.from({ length: 5 }, () => '');
         const tsString = formatSheetTimestamp(timestamp || new Date());
-        if (tsCol >= 0) row[tsCol] = tsString;
-        if (totalCol >= 0) row[totalCol] = Number.isFinite(count) ? count : 0;
-        const appendRange = title ? `${title}!A1:E1` : `A1:E1`;
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: appendRange,
-            valueInputOption: 'USER_ENTERED',
-            insertDataOption: 'INSERT_ROWS',
-            requestBody: { values: [row] }
-        });
-        return true;
+        if (tsCol >= 0 && tsCol <= 4) row[tsCol] = tsString;
+        if (totalCol >= 0 && totalCol <= 4) row[totalCol] = Number.isFinite(count) ? count : 0;
+        // Write only A:E into the next empty row so columns F:H remain untouched
+        return await writeNextEmptyRowAtoE(row);
     } catch (error) {
         console.error('Error appending row to Google Sheets:', error);
         return false;
@@ -223,7 +259,7 @@ async function appendCategoryRowToGoogleSheets(categoryName, text, timestamp) {
     if (!sheets) return false;
     try {
         const title = await resolveSheetTitle(sheets);
-        const headerRange = title ? `${title}!A1:Z1` : `A1:Z1`;
+        const headerRange = title ? `${title}!A1:E1` : `A1:E1`;
         const headerResp = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: headerRange });
         const header = (headerResp.data.values && headerResp.data.values[0]) || [];
         const norm = (v) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
@@ -236,20 +272,13 @@ async function appendCategoryRowToGoogleSheets(categoryName, text, timestamp) {
         };
         const targetCol = colMap[categoryName];
         if (typeof targetCol !== 'number' || targetCol < 0) return false;
-        const width = Math.max(5, header.length, Math.max(tsCol + 1, targetCol + 1));
-        const row = Array.from({ length: width }, () => '');
+        if (targetCol > 4) return false;
+        const row = Array.from({ length: 5 }, () => '');
         const tsString = formatSheetTimestamp(timestamp || new Date());
-        if (tsCol >= 0) row[tsCol] = tsString;
+        if (tsCol >= 0 && tsCol <= 4) row[tsCol] = tsString;
         row[targetCol] = text || '';
-        const appendRange = title ? `${title}!A1:E1` : `A1:E1`;
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: SPREADSHEET_ID,
-            range: appendRange,
-            valueInputOption: 'USER_ENTERED',
-            insertDataOption: 'INSERT_ROWS',
-            requestBody: { values: [row] }
-        });
-        return true;
+        // Write only A:E into the next empty row so columns F:H remain untouched
+        return await writeNextEmptyRowAtoE(row);
     } catch (error) {
         console.error('Error appending category row to Google Sheets:', error);
         return false;
