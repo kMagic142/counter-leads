@@ -5,6 +5,8 @@ const { google } = require('googleapis');
 const cors = require('cors');
 require('dotenv').config();
 
+process.env.TZ = 'Europe/Bucharest';
+
 const app = express();
 const PORT = 3000;
 // No local data file; operate directly on Google Sheets
@@ -83,20 +85,14 @@ async function fetchFromGoogleSheets() {
                 const hasFaraDeal = typeof faraDealCell !== 'undefined' && String(faraDealCell).trim() !== '';
                 const hasCuDealLost = typeof cuDealLostCell !== 'undefined' && String(cuDealLostCell).trim() !== '';
                 const hasAltaCompanie = typeof altaCompanieCell !== 'undefined' && String(altaCompanieCell).trim() !== '';
-                let iso = null;
-                if (tsStr) {
-                    const d = new Date(tsStr);
-                    if (!Number.isNaN(d.getTime())) {
-                        iso = d.toISOString();
-                    }
-                }
-                const idBase = iso ? Date.parse(iso) : Date.now();
+                const tsMs = parseSheetTimestampToMs(tsStr);
+                const idBase = tsMs != null ? tsMs : Date.now();
                 console.log("Fetched data from Google Sheets.")
                 return {
                     id: idBase + idx,
                     count: Number.isNaN(count) ? 0 : count,
                     // Preserve the sheet's timestamp string; fall back to ISO or now if missing
-                    timestamp: tsStr || iso || new Date().toISOString(),
+                    timestamp: tsStr || formatSheetTimestamp(new Date()),
                     endOfDayTotal: Number.isNaN(endOfDayTotal) ? undefined : endOfDayTotal,
                     categories: {
                         faraDealExistent: !!hasFaraDeal,
@@ -110,7 +106,15 @@ async function fetchFromGoogleSheets() {
                     }
                 };
             })
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            .sort((a, b) => {
+                const ams = parseSheetTimestampToMs(a.timestamp);
+                const bms = parseSheetTimestampToMs(b.timestamp);
+                // Put parseable timestamps first, newest to oldest; fall back to string compare
+                if (ams != null && bms != null) return bms - ams;
+                if (ams != null && bms == null) return -1;
+                if (ams == null && bms != null) return 1;
+                return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+            });
     } catch (error) {
         console.error('Error fetching from Google Sheets:', error);
         return [];
@@ -171,16 +175,63 @@ app.get('/api/historyByCategory', async (req, res) => {
     res.json(filtered);
 });
 
+function parseSheetTimestampToMs(ts) {
+    if (!ts) return null;
+    if (ts instanceof Date) {
+        const ms = ts.getTime();
+        return Number.isNaN(ms) ? null : ms;
+    }
+    if (typeof ts !== 'string') {
+        const d = new Date(ts);
+        const ms = d.getTime();
+        return Number.isNaN(ms) ? null : ms;
+    }
+
+    const s = ts.trim();
+    // Expected: DD.MM.YYYY HH:mm:ss (e.g., 16.12.2025 12:29:56)
+    const m = /^\s*(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*$/.exec(s);
+    if (m) {
+        const day = parseInt(m[1], 10);
+        const month = parseInt(m[2], 10);
+        const year = parseInt(m[3], 10);
+        const hh = parseInt(m[4], 10);
+        const mm = parseInt(m[5], 10);
+        const ss = parseInt(m[6], 10);
+        if (month < 1 || month > 12) return null;
+        if (day < 1 || day > 31) return null;
+        if (hh < 0 || hh > 23) return null;
+        if (mm < 0 || mm > 59) return null;
+        if (ss < 0 || ss > 59) return null;
+        const d = new Date(year, month - 1, day, hh, mm, ss);
+        const ms = d.getTime();
+        return Number.isNaN(ms) ? null : ms;
+    }
+
+    // Fallback: try native Date parsing (ISO, locale strings, etc.)
+    const d = new Date(s);
+    const ms = d.getTime();
+    return Number.isNaN(ms) ? null : ms;
+}
+
 function formatSheetTimestamp(dInput) {
-    const d = dInput instanceof Date ? dInput : new Date(dInput);
-    const month = d.getMonth() + 1; // 1-12, no leading zero
-    const day = d.getDate(); // 1-31, no leading zero
-    const year = d.getFullYear();
+    const ms = parseSheetTimestampToMs(dInput);
+    const d = ms == null ? new Date() : new Date(ms);
     const pad2 = (n) => String(n).padStart(2, '0');
+    const day = pad2(d.getDate());
+    const month = pad2(d.getMonth() + 1);
+    const year = d.getFullYear();
     const hh = pad2(d.getHours());
     const mm = pad2(d.getMinutes());
     const ss = pad2(d.getSeconds());
     return `${day}.${month}.${year} ${hh}:${mm}:${ss}`;
+}
+
+function timestampsMatch(a, b) {
+    if (!a || !b) return false;
+    const ams = parseSheetTimestampToMs(a);
+    const bms = parseSheetTimestampToMs(b);
+    if (ams != null && bms != null) return ams === bms;
+    return String(a).trim() === String(b).trim();
 }
 
 async function writeNextEmptyRowAtoE(valuesAtoE) {
@@ -299,16 +350,10 @@ async function updateRowInGoogleSheets(timestamp, newCount) {
         const values = resp.data.values || [];
         if (values.length <= 1) return false;
         let targetRowIndex = -1; // 0-based in array, but 1-based in sheet
-        const targetIso = (() => {
-            const d = new Date(timestamp);
-            return Number.isNaN(d.getTime()) ? null : d.toISOString();
-        })();
         for (let i = 1; i < values.length; i++) {
             const tsStr = values[i][1];
             if (!tsStr) continue;
-            const d = new Date(tsStr);
-            const iso = Number.isNaN(d.getTime()) ? null : d.toISOString();
-            if ((iso && targetIso && iso === targetIso) || (!iso && !targetIso && tsStr === timestamp)) {
+            if (timestampsMatch(tsStr, timestamp)) {
                 targetRowIndex = i;
                 break;
             }
@@ -348,16 +393,10 @@ async function deleteRowInGoogleSheets(timestamp) {
         const values = resp.data.values || [];
         if (values.length <= 1) return false;
         let targetRowIndex = -1;
-        const targetIso = (() => {
-            const d = new Date(timestamp);
-            return Number.isNaN(d.getTime()) ? null : d.toISOString();
-        })();
         for (let i = 1; i < values.length; i++) {
             const tsStr = values[i][1];
             if (!tsStr) continue;
-            const d = new Date(tsStr);
-            const iso = Number.isNaN(d.getTime()) ? null : d.toISOString();
-            if ((iso && targetIso && iso === targetIso) || (!iso && !targetIso && tsStr === timestamp)) {
+            if (timestampsMatch(tsStr, timestamp)) {
                 targetRowIndex = i;
                 break;
             }
@@ -409,13 +448,10 @@ async function updateCategoryTextInGoogleSheets(timestamp, categoryName, newText
         const targetCol = colMap[categoryName];
         if (typeof targetCol !== 'number' || targetCol < 0) return false;
         let targetRowIndex = -1;
-        const targetIso = (() => { const d = new Date(timestamp); return Number.isNaN(d.getTime()) ? null : d.toISOString(); })();
         for (let i = 1; i < values.length; i++) {
             const tsStr = tsCol >= 0 ? values[i][tsCol] : values[i][1];
             if (!tsStr) continue;
-            const d = new Date(tsStr);
-            const iso = Number.isNaN(d.getTime()) ? null : d.toISOString();
-            if ((iso && targetIso && iso === targetIso) || (!iso && !targetIso && tsStr === timestamp)) {
+            if (timestampsMatch(tsStr, timestamp)) {
                 targetRowIndex = i;
                 break;
             }

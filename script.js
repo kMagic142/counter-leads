@@ -1,6 +1,8 @@
 let count = 0;
 const API_URL = 'http://localhost:3000/api';
 
+process.env.TZ = 'Europe/Bucharest';
+
 const counterDisplay = document.getElementById('counterDisplay');
 const counterButton = document.getElementById('counterButton');
 const resetButton = document.getElementById('resetButton');
