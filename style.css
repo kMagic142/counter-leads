@@ -58,6 +58,9 @@
     --danger: #ef4444;
     --card: #1e1e1e;
     --count-gray: #cfcfcf; /* grey tone for counters */
+
+    --stepper-btn-w: 46px;
+    --stepper-gap: 12px;
 }
 
 body {
@@ -122,6 +125,57 @@ body {
     letter-spacing: -2px;
 }
 
+.counter-stepper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2rem;
+}
+
+.counter-stepper .counter-display {
+    margin-bottom: 0;
+}
+
+.counter-stepper-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--stepper-gap);
+    margin-top: 2rem;
+}
+
+.stepper-btn {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #fff;
+    border: none;
+    width: var(--stepper-btn-w);
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.stepper-btn:active { transform: translateY(0); }
+
+.stepper-btn-plus {
+    background-color: var(--accent);
+    box-shadow: 0 6px 18px rgba(21,94,59,0.14);
+}
+
+.stepper-btn-plus:hover { background-color: var(--accent-2); transform: translateY(-2px); }
+
+.stepper-btn-minus {
+    background-color: var(--danger);
+    box-shadow: 0 6px 18px rgba(239,68,68,0.14);
+}
+
+.stepper-btn-minus:hover { background-color: #dc2626; transform: translateY(-2px); }
+
 /* Buttons centered */
 .counter-button {
     font-size: 1.6rem;
@@ -152,6 +206,9 @@ body {
     cursor: pointer;
     margin-top: 0.5rem;
     transition: background-color 0.12s ease;
+
+    /* Match the combined width of (-) gap (+) */
+    width: calc(var(--stepper-btn-w) * 2 + var(--stepper-gap));
 }
 
 .reset-button:hover { background-color: #3b3b3b; }

@@ -23,6 +23,9 @@
   const OPEN_BTN_LEAD_ID_ATTR = 'data-copilot-open-btn-lead-id';
   const MAX_OPENED_LEADS = 5000;
 
+  const STATUS_TRACKING_ATTR = 'data-copilot-status-tracking';
+  const STATUS_DEBOUNCE_MS = 350;
+
   let openedLeadIds = new Set();
   let openedLeadIdsLoadPromise = null;
 
@@ -197,6 +200,111 @@
         btn.classList.add(OPENED_BTN_CLASS);
       }
     }
+  }
+
+  function findStatusDisplayElement(root) {
+    if (!root) return null;
+
+    const candidates = Array.from(root.querySelectorAll('span.session-status'));
+    for (const el of candidates) {
+      const t = ws(el.textContent).toLowerCase();
+      if (t.startsWith('status:') || t.includes(' status:')) return el;
+    }
+
+    // Fallback: sometimes the dropdown itself shows the selected value.
+    const dropdown = root.querySelector('#statusDropdown');
+    if (dropdown) return dropdown;
+
+    return null;
+  }
+
+  function extractStatusValueFromText(text) {
+    const raw = ws(text);
+    if (!raw) return null;
+
+    const m = raw.match(/status\s*:\s*(.+)$/i);
+    const v = ws(m ? m[1] : raw);
+    if (!v) return null;
+    if (v.toLowerCase() === 'status') return null;
+    return v;
+  }
+
+  function setupLeadStatusCounting() {
+    const root = document.querySelector('#edit-session');
+    if (!root) return;
+    if (root.getAttribute(STATUS_TRACKING_ATTR) === '1') return;
+
+    const leadId = extractLeadIdFromPathname();
+    if (!leadId) return;
+
+    const statusEl = findStatusDisplayElement(root);
+    if (!statusEl) return;
+
+    let initialized = false;
+    let lastStatus = null;
+    let timer = null;
+
+    function getCurrentStatus() {
+      return extractStatusValueFromText(statusEl.textContent);
+    }
+
+    function sendStatus(status) {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+          chrome.runtime.sendMessage({
+            type: 'COPILOT_LEAD_STATUS_CHANGED',
+            leadId: String(leadId),
+            status: String(status || ''),
+            url: String(window.location.href || ''),
+            ts: Date.now()
+          });
+        }
+      } catch {
+      }
+    }
+
+    function checkNow() {
+      const current = getCurrentStatus();
+      if (!initialized) {
+        initialized = true;
+        lastStatus = current;
+        return;
+      }
+      if (!current) return;
+      if (lastStatus && ws(lastStatus).toLowerCase() === ws(current).toLowerCase()) return;
+      lastStatus = current;
+      sendStatus(current);
+    }
+
+    function scheduleCheck() {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        checkNow();
+      }, STATUS_DEBOUNCE_MS);
+    }
+
+    // Initial baseline
+    initialized = true;
+    lastStatus = getCurrentStatus();
+
+    const mo = new MutationObserver(() => scheduleCheck());
+    mo.observe(statusEl, { childList: true, subtree: true, characterData: true });
+
+    // Click fallback (covers cases where the status element updates after a request)
+    root.addEventListener(
+      'click',
+      (e) => {
+        const t = e.target;
+        if (!t) return;
+        // If you click within the status dropdown/menu, re-check after a short delay.
+        const clickedInStatus = !!(t.closest && (t.closest('#statusDropdown') || t.closest('[aria-labelledby="statusDropdown"]')));
+        if (clickedInStatus) scheduleCheck();
+      },
+      true
+    );
+
+    root.setAttribute(STATUS_TRACKING_ATTR, '1');
   }
 
   function adjustDataTablesSizing() {
@@ -720,6 +828,8 @@
       loadOpenedLeadIdsOnce();
       const leadId = extractLeadIdFromPathname();
       if (leadId) markLeadAsOpened(leadId);
+
+      setupLeadStatusCounting();
 
       inlineCards();
       pairLeadDetails();

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leads Counter</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="panel panel-counter">
+      <h1 class="title">Leads Counter Status</h1>
+
+      <div class="counter-stepper" aria-label="Counter">
+        <div class="counter-display" id="counterDisplay">0</div>
+        <div class="counter-stepper-buttons" aria-label="Adjust counter">
+          <button class="stepper-btn stepper-btn-minus" id="minusButton" type="button" aria-label="Decrement">-</button>
+          <button class="stepper-btn stepper-btn-plus" id="plusButton" type="button" aria-label="Increment">+</button>
+        </div>
+      </div>
+
+      <button class="reset-button" id="sendButton" type="button">Send</button>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,16 +1,87 @@
 let count = 0;
 const API_URL = 'http://localhost:3000/api';
 
-process.env.TZ = 'Europe/Bucharest';
-
 const counterDisplay = document.getElementById('counterDisplay');
-const counterButton = document.getElementById('counterButton');
+const plusButton = document.getElementById('plusButton');
+const minusButton = document.getElementById('minusButton');
 const resetButton = document.getElementById('resetButton');
 const historyList = document.getElementById('historyList');
 const syncButton = document.getElementById('syncButton');
 const addButton = document.getElementById('addButton');
 const navButtons = document.querySelectorAll('.history-section .nav-btn');
 let cachedData = [];
+
+async function fetchLiveCount() {
+    try {
+        const r = await fetch(`${API_URL}/live`);
+        const data = await r.json();
+        const n = parseInt(data && data.count, 10);
+        return Number.isNaN(n) ? 0 : n;
+    } catch (e) {
+        console.error('Error fetching live count:', e);
+        return 0;
+    }
+}
+
+async function setLiveCount(n) {
+    try {
+        const r = await fetch(`${API_URL}/live/set`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: n })
+        });
+        const data = await r.json();
+        const v = parseInt(data && data.count, 10);
+        return Number.isNaN(v) ? 0 : v;
+    } catch (e) {
+        console.error('Error setting live count:', e);
+        return n;
+    }
+}
+
+async function incrementLiveCount() {
+    try {
+        const r = await fetch(`${API_URL}/live/increment`, { method: 'POST' });
+        const data = await r.json();
+        const v = parseInt(data && data.count, 10);
+        return Number.isNaN(v) ? (count + 1) : v;
+    } catch (e) {
+        console.error('Error incrementing live count:', e);
+        return count + 1;
+    }
+}
+
+async function resetLiveCount() {
+    try {
+        const r = await fetch(`${API_URL}/live/reset`, { method: 'POST' });
+        const data = await r.json();
+        const v = parseInt(data && data.count, 10);
+        return Number.isNaN(v) ? 0 : v;
+    } catch (e) {
+        console.error('Error resetting live count:', e);
+        return 0;
+    }
+}
+
+function startLiveCountEvents() {
+    try {
+        const es = new EventSource(`${API_URL}/live/events`);
+        es.addEventListener('liveCount', (evt) => {
+            try {
+                const data = JSON.parse(evt.data);
+                const n = parseInt(data && data.count, 10);
+                count = Number.isNaN(n) ? 0 : n;
+                counterDisplay.textContent = String(count);
+            } catch {
+            }
+        });
+        es.onerror = () => {
+            // Keep UI usable even if events disconnect.
+        };
+    } catch (e) {
+        console.error('Failed to start live events:', e);
+    }
+}
 
 async function loadHistory() {
     try {
@@ -289,10 +360,21 @@ async function addToHistory(countValue) {
     }
 }
 
-counterButton.addEventListener('click', () => {
-    count++;
-    counterDisplay.textContent = count;
-});
+if (plusButton) {
+    plusButton.addEventListener('click', async () => {
+        const next = await incrementLiveCount();
+        count = next;
+        counterDisplay.textContent = String(count);
+    });
+}
+
+if (minusButton) {
+    minusButton.addEventListener('click', async () => {
+        const next = await setLiveCount(Math.max(0, (parseInt(count, 10) || 0) - 1));
+        count = next;
+        counterDisplay.textContent = String(count);
+    });
+}
 
 // Make current count editable (contenteditable with numeric guard)
 counterDisplay.setAttribute('contenteditable', 'true');
@@ -365,12 +447,19 @@ counterDisplay.addEventListener('blur', () => {
         count = Number.isNaN(newVal) ? 0 : newVal;
         counterDisplay.textContent = String(count);
     }
+
+    // Keep the server in sync with the edited value.
+    setLiveCount(count).then((serverCount) => {
+        count = serverCount;
+        counterDisplay.textContent = String(count);
+    });
 });
 
-resetButton.addEventListener('click', () => {
-    if (count > 0) addToHistory(count);
-    count = 0;
-    counterDisplay.textContent = count;
+resetButton.addEventListener('click', async () => {
+    if (count > 0) await addToHistory(count);
+    const next = await resetLiveCount();
+    count = next;
+    counterDisplay.textContent = String(count);
 });
 
 if (syncButton) {
@@ -428,5 +517,9 @@ navButtons.forEach(btn => {
 });
 
 // Initialize
-counterDisplay.textContent = count;
+fetchLiveCount().then((n) => {
+    count = n;
+    counterDisplay.textContent = String(count);
+});
+startLiveCountEvents();
 renderCategory('All');

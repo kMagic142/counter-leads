@@ -11,9 +11,135 @@ const app = express();
 const PORT = 3000;
 // No local data file; operate directly on Google Sheets
 
+// Live counter state (local persistence)
+const LIVE_STATE_FILE = path.join(__dirname, 'lead-status-state.json');
+let liveCount = 0;
+let countedLeadIds = new Set();
+const sseClients = new Set();
+
+function loadLiveState() {
+    try {
+        if (!fs.existsSync(LIVE_STATE_FILE)) return;
+        const raw = fs.readFileSync(LIVE_STATE_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        const c = parseInt(parsed && parsed.liveCount, 10);
+        liveCount = Number.isNaN(c) ? 0 : c;
+        const ids = parsed && parsed.countedLeadIds;
+        if (ids && typeof ids === 'object') {
+            countedLeadIds = new Set(Object.keys(ids).map(String));
+        }
+    } catch (e) {
+        console.error('Failed to load live state:', e);
+        liveCount = 0;
+        countedLeadIds = new Set();
+    }
+}
+
+function saveLiveState() {
+    try {
+        const ids = {};
+        for (const id of countedLeadIds) ids[String(id)] = true;
+        fs.writeFileSync(
+            LIVE_STATE_FILE,
+            JSON.stringify(
+                {
+                    version: 1,
+                    liveCount,
+                    countedLeadIds: ids,
+                    updatedAt: new Date().toISOString()
+                },
+                null,
+                2
+            ),
+            'utf8'
+        );
+    } catch (e) {
+        console.error('Failed to save live state:', e);
+    }
+}
+
+function broadcastLiveCount() {
+    const data = JSON.stringify({ count: liveCount });
+    for (const res of sseClients) {
+        try {
+            res.write(`event: liveCount\n`);
+            res.write(`data: ${data}\n\n`);
+        } catch {
+            // ignore
+        }
+    }
+}
+
+loadLiveState();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
+
+// --- Live counter (SSE) ---
+app.get('/api/live', (req, res) => {
+    res.json({ count: liveCount });
+});
+
+app.get('/api/live/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders && res.flushHeaders();
+
+    sseClients.add(res);
+    // initial snapshot
+    try {
+        res.write(`event: liveCount\n`);
+        res.write(`data: ${JSON.stringify({ count: liveCount })}\n\n`);
+    } catch {
+    }
+
+    req.on('close', () => {
+        sseClients.delete(res);
+    });
+});
+
+app.post('/api/live/increment', (req, res) => {
+    liveCount = (parseInt(liveCount, 10) || 0) + 1;
+    saveLiveState();
+    broadcastLiveCount();
+    res.json({ count: liveCount });
+});
+
+app.post('/api/live/set', (req, res) => {
+    const n = parseInt(req.body && req.body.count, 10);
+    liveCount = Number.isNaN(n) || n < 0 ? 0 : n;
+    saveLiveState();
+    broadcastLiveCount();
+    res.json({ count: liveCount });
+});
+
+app.post('/api/live/reset', (req, res) => {
+    liveCount = 0;
+    countedLeadIds = new Set();
+    saveLiveState();
+    broadcastLiveCount();
+    res.json({ count: liveCount });
+});
+
+// Called by the extension (via background service worker)
+app.post('/api/leads/status-set', (req, res) => {
+    const leadId = req.body && req.body.leadId != null ? String(req.body.leadId).trim() : '';
+    const status = req.body && req.body.status != null ? String(req.body.status).trim() : '';
+    if (!leadId) return res.status(400).json({ error: 'leadId required' });
+
+    // Only count the first status-change we ever record per lead id
+    if (countedLeadIds.has(leadId)) {
+        return res.json({ count: liveCount, counted: false, leadId, status });
+    }
+
+    countedLeadIds.add(leadId);
+    liveCount = (parseInt(liveCount, 10) || 0) + 1;
+    saveLiveState();
+    broadcastLiveCount();
+    res.json({ count: liveCount, counted: true, leadId, status });
+});
 
 // Initialize Google Sheets
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;

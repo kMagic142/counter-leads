@@ -18,10 +18,15 @@
     <body>
         <div class="container">
             <div class="panel panel-counter">
-                <h1 class="title">Counter Leads</h1>
-                <div class="counter-display" id="counterDisplay">0</div>
-                <button class="counter-button" id="counterButton">Click to Count</button>
-                <button class="reset-button" id="resetButton">Reset</button>
+                <h1 class="title">Leads Counter Status</h1>
+                <div class="counter-stepper" aria-label="Counter">
+                    <div class="counter-display" id="counterDisplay">0</div>
+                    <div class="counter-stepper-buttons" aria-label="Adjust counter">
+                        <button class="stepper-btn stepper-btn-minus" id="minusButton" type="button" aria-label="Decrement">-</button>
+                        <button class="stepper-btn stepper-btn-plus" id="plusButton" type="button" aria-label="Increment">+</button>
+                    </div>
+                </div>
+                <button class="reset-button" id="resetButton">Send</button>
             </div>
 
             <aside class="panel history-section">
