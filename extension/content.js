@@ -19,15 +19,32 @@
 
   const OPENED_LEADS_STORAGE_KEY = 'copilot_opened_leads_v1';
   const OPENED_BTN_CLASS = 'copilot-opened-open-btn';
+  const OPENED_ROW_CLASS = 'copilot-opened-lead-row';
   const OPEN_BTN_ATTR = 'data-copilot-open-btn';
   const OPEN_BTN_LEAD_ID_ATTR = 'data-copilot-open-btn-lead-id';
   const MAX_OPENED_LEADS = 5000;
 
+  const LEAD_FLAG_REPLACED_ATTR = 'data-copilot-lead-flag-replaced';
+  const LEAD_FLAG_CLASS = 'copilot-lead-flag';
+  const LEAD_YEARS_FORMATTED_ATTR = 'data-copilot-years-formatted';
+
   const STATUS_TRACKING_ATTR = 'data-copilot-status-tracking';
   const STATUS_DEBOUNCE_MS = 350;
 
+  const LEAD_STATUS_STORAGE_KEY = 'copilot_lead_status_map_v1';
+  const LEAD_STATUS_LAST_EVENT_KEY = 'copilot_lead_status_last_v1';
+  const LIVE_STATUS_LIST_ATTR = 'data-copilot-live-status-list';
+
+  const CREATED_DATE_RENDERED_ATTR = 'data-copilot-created-date-rendered';
+  const CREATED_DATE_CLASS = 'copilot-created-date';
+  const LEAD_HEADER_TITLE_CLASS = 'copilot-lead-header-title';
+
   let openedLeadIds = new Set();
   let openedLeadIdsLoadPromise = null;
+
+  let leadStatusMap = {};
+  let leadStatusMapLoadPromise = null;
+  const statusColumnIndexCache = new WeakMap();
 
   const SUSPICIOUS_CALLING_CODES = [
     { code: '234', label: 'Nigeria' },
@@ -48,14 +65,43 @@
 
       #leads-table_wrapper button.${OPENED_BTN_CLASS},
       .dataTables_wrapper button.${OPENED_BTN_CLASS} {
-        filter: brightness(1.25) saturate(0.9);
-        opacity: 0.85;
+        filter: brightness(1.15) saturate(0.95);
+        opacity: 0.9;
       }
 
       #leads-table_wrapper button.${OPENED_BTN_CLASS}:hover,
       .dataTables_wrapper button.${OPENED_BTN_CLASS}:hover {
         filter: none;
         opacity: 1;
+      }
+
+      #leads-table_wrapper table tbody tr.${OPENED_ROW_CLASS} > td,
+      .dataTables_wrapper table tbody tr.${OPENED_ROW_CLASS} > td {
+        background-color: rgba(40, 167, 69, 0.10) !important;
+      }
+
+      #leads-table_wrapper table tbody tr.${OPENED_ROW_CLASS}:hover > td,
+      .dataTables_wrapper table tbody tr.${OPENED_ROW_CLASS}:hover > td {
+        background-color: rgba(40, 167, 69, 0.14) !important;
+      }
+
+      .${LEAD_FLAG_CLASS} {
+        display: inline-block;
+        width: 18px;
+        height: 12px;
+        margin-right: 6px;
+        vertical-align: -2px;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+      }
+
+      .${LEAD_FLAG_CLASS}[data-flag="de"] {
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2718%27%20height%3D%2712%27%20viewBox%3D%270%200%2018%2012%27%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%270%27%20fill%3D%27%23000%27/%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%274%27%20fill%3D%27%23DD0000%27/%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%278%27%20fill%3D%27%23FFCE00%27/%3E%3C/svg%3E");
+      }
+
+      .${LEAD_FLAG_CLASS}[data-flag="nl"] {
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%2718%27%20height%3D%2712%27%20viewBox%3D%270%200%2018%2012%27%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%270%27%20fill%3D%27%23AE1C28%27/%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%274%27%20fill%3D%27%23FFF%27/%3E%3Crect%20width%3D%2718%27%20height%3D%274%27%20y%3D%278%27%20fill%3D%27%2321468B%27/%3E%3C/svg%3E");
       }
 
       #edit-session .${DETAILS_BOX_CLASS} {
@@ -114,8 +160,168 @@
       #leads-table_wrapper {
         overflow-x: hidden !important;
       }
+
+      .${CREATED_DATE_CLASS} {
+        margin-left: auto;
+        font-size: 0.85em;
+        opacity: 0.8;
+        white-space: nowrap;
+      }
+
+      h6.${CREATED_DATE_CLASS} {
+        margin: 0 0 0 auto;
+      }
+
+      .${LEAD_HEADER_TITLE_CLASS} {
+        display: flex !important;
+        align-items: center;
+        width: 100%;
+      }
     `;
     document.documentElement.appendChild(style);
+  }
+
+  function stripCountryEmojiFromTextNodes(el) {
+    if (!el) return { hadDE: false, hadNL: false };
+    let hadDE = false;
+    let hadNL = false;
+
+    try {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let node = walker.nextNode();
+      while (node) {
+        nodes.push(node);
+        node = walker.nextNode();
+      }
+
+      for (const n of nodes) {
+        const t = String(n.nodeValue || '');
+        if (!t) continue;
+        if (t.includes('🇩🇪')) hadDE = true;
+        if (t.includes('🇳🇱')) hadNL = true;
+        if (!hadDE && !hadNL) continue;
+        const cleaned = t.replace(/🇩🇪|🇳🇱/g, '');
+        if (cleaned !== t) n.nodeValue = cleaned;
+      }
+    } catch {
+      const t = String(el.textContent || '');
+      hadDE = t.includes('🇩🇪');
+      hadNL = t.includes('🇳🇱');
+      if (hadDE || hadNL) el.textContent = t.replace(/🇩🇪|🇳🇱/g, '');
+    }
+
+    return { hadDE, hadNL };
+  }
+
+  function beautifyArrayLikeText(raw) {
+    let t = ws(raw);
+    if (!t) return t;
+
+    // Strip surrounding brackets for array-like values: [2024,2025] -> 2024,2025
+    if (t.startsWith('[') && t.endsWith(']')) {
+      t = ws(t.slice(1, -1));
+    }
+
+    // Normalize spacing after separators.
+    t = t.replace(/\s*,\s*/g, ', ');
+    t = t.replace(/\s*:\s*/g, ': ');
+    return t;
+  }
+
+  function removeLeadIdYearsHoverAndBeautify(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    for (const table of tables) {
+      const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector('tbody');
+      if (!body) continue;
+
+      const rows = body.querySelectorAll('tr[role="row"]');
+      for (const row of rows) {
+        // 1) Lead ID cell hover tooltip: remove title and beautify if present
+        const leadSpan = row.querySelector('td.sorting_1 span[title]');
+        if (leadSpan && leadSpan.getAttribute(LEAD_YEARS_FORMATTED_ATTR) !== '1') {
+          const title = leadSpan.getAttribute('title');
+          if (title) {
+            // If someone later re-adds it, keep it pretty.
+            const pretty = beautifyArrayLikeText(title);
+            // Remove hover tooltip entirely.
+            leadSpan.removeAttribute('title');
+            // Store pretty value in case you want it later (no hover).
+            leadSpan.setAttribute('data-copilot-years', pretty);
+          }
+          leadSpan.setAttribute(LEAD_YEARS_FORMATTED_ATTR, '1');
+        }
+
+        // 2) Beautify the separate years column cell (usually contains [2024,2025])
+        // Only touch simple text-only cells to avoid breaking nested markup.
+        const cells = row.querySelectorAll('td');
+        for (const cell of cells) {
+          if (cell.getAttribute(LEAD_YEARS_FORMATTED_ATTR) === '1') continue;
+
+          const hasElementChildren = !!(cell.children && cell.children.length);
+          if (hasElementChildren) continue;
+
+          const raw = ws(cell.textContent);
+          if (!raw) continue;
+          if (!(raw.startsWith('[') && raw.endsWith(']'))) continue;
+
+          const pretty = beautifyArrayLikeText(raw);
+          if (pretty && pretty !== raw) {
+            cell.textContent = pretty;
+          }
+          cell.setAttribute(LEAD_YEARS_FORMATTED_ATTR, '1');
+        }
+      }
+    }
+  }
+
+  function replaceLeadIdCountryEmojiWithFlags(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    for (const table of tables) {
+      const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector('tbody');
+      if (!body) continue;
+
+      const rows = body.querySelectorAll('tr[role="row"]');
+      for (const row of rows) {
+        const leadCellSpan =
+          row.querySelector('td.sorting_1 span[title]') ||
+          row.querySelector('td.sorting_1 span') ||
+          row.querySelector('td.sorting_1') ||
+          row.querySelector('td:first-child span') ||
+          row.querySelector('td:first-child');
+
+        if (!leadCellSpan) continue;
+        if (leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === '1') continue;
+        if (leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`)) {
+          leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
+          continue;
+        }
+
+        // Remove hover tooltip from the lead-id span if present.
+        if (leadCellSpan.removeAttribute) leadCellSpan.removeAttribute('title');
+
+        const { hadDE, hadNL } = stripCountryEmojiFromTextNodes(leadCellSpan);
+        if (!hadDE && !hadNL) continue;
+
+        const flag = document.createElement('span');
+        flag.className = LEAD_FLAG_CLASS;
+        if (hadDE) {
+          flag.setAttribute('data-flag', 'de');
+          flag.title = 'Germany';
+          flag.setAttribute('aria-label', 'Germany');
+        } else {
+          flag.setAttribute('data-flag', 'nl');
+          flag.title = 'Netherlands';
+          flag.setAttribute('aria-label', 'Netherlands');
+        }
+        leadCellSpan.insertBefore(flag, leadCellSpan.firstChild);
+        leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
+      }
+    }
   }
 
   function extractLeadIdFromHref(href) {
@@ -161,6 +367,47 @@
     return openedLeadIdsLoadPromise;
   }
 
+  function loadLeadStatusMapOnce() {
+    if (leadStatusMapLoadPromise) return leadStatusMapLoadPromise;
+
+    leadStatusMapLoadPromise = new Promise((resolve) => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get([LEAD_STATUS_STORAGE_KEY], (res) => {
+            const raw = res ? res[LEAD_STATUS_STORAGE_KEY] : null;
+            leadStatusMap = raw && typeof raw === 'object' ? raw : {};
+            resolve(leadStatusMap);
+          });
+          return;
+        }
+      } catch {
+      }
+
+      resolve(leadStatusMap);
+    });
+
+    return leadStatusMapLoadPromise;
+  }
+
+  function recordLeadStatusUpdate(leadId, status) {
+    const id = ws(leadId);
+    const st = ws(status);
+    if (!id || !st) return;
+
+    leadStatusMap = leadStatusMap && typeof leadStatusMap === 'object' ? leadStatusMap : {};
+    leadStatusMap[id] = { status: st, ts: Date.now() };
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({
+          [LEAD_STATUS_STORAGE_KEY]: leadStatusMap,
+          [LEAD_STATUS_LAST_EVENT_KEY]: { leadId: id, status: st, ts: Date.now() }
+        });
+      }
+    } catch {
+    }
+  }
+
   function persistOpenedLeadIds() {
     const arr = Array.from(openedLeadIds);
     const trimmed = arr.length > MAX_OPENED_LEADS ? arr.slice(arr.length - MAX_OPENED_LEADS) : arr;
@@ -187,9 +434,15 @@
     openedLeadIds.add(id);
     persistOpenedLeadIds();
 
-    if (btn && btn.classList) {
-      btn.classList.add(OPENED_BTN_CLASS);
-    }
+    if (btn) setOpenedButtonUI(btn);
+  }
+
+  function setOpenedButtonUI(btn) {
+    if (!btn || !btn.classList) return;
+    btn.classList.add(OPENED_BTN_CLASS);
+    if (typeof btn.textContent === 'string') btn.textContent = 'Opened';
+    const row = btn.closest && btn.closest('tr');
+    if (row) row.classList.add(OPENED_ROW_CLASS);
   }
 
   function refreshOpenButtonsOpenedState() {
@@ -197,7 +450,7 @@
     for (const btn of btns) {
       const leadId = btn.getAttribute(OPEN_BTN_LEAD_ID_ATTR);
       if (leadId && openedLeadIds.has(String(leadId))) {
-        btn.classList.add(OPENED_BTN_CLASS);
+        setOpenedButtonUI(btn);
       }
     }
   }
@@ -249,6 +502,7 @@
     }
 
     function sendStatus(status) {
+      recordLeadStatusUpdate(leadId, status);
       try {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
           chrome.runtime.sendMessage({
@@ -314,6 +568,146 @@
     );
 
     root.setAttribute(STATUS_TRACKING_ATTR, '1');
+  }
+
+  function findDetailValueByLabel(labelIncludes) {
+    const root = document.querySelector('#edit-session');
+    if (!root) return null;
+
+    const normIncludes = (s) => {
+      const t = ws(s).toLowerCase();
+      return labelIncludes.some((needle) => t.includes(String(needle).toLowerCase()));
+    };
+
+    // Preferred: paired layout rows
+    const pairedRows = Array.from(root.querySelectorAll(`.${DETAIL_ROW_CLASS}`));
+    for (const row of pairedRows) {
+      const labelEl = row.querySelector(`.${DETAIL_LABEL_CLASS}`);
+      const valueEl = row.querySelector(`.${DETAIL_VALUE_CLASS}`);
+      if (!labelEl || !valueEl) continue;
+      if (!normIncludes(labelEl.textContent)) continue;
+      const v = ws(valueEl.textContent);
+      if (v) return v;
+    }
+
+    // Fallback: original label/value columns
+    const labelsCol = root.querySelector('.session-details');
+    const valuesCol = root.querySelector('.session-details-values');
+    if (labelsCol && valuesCol) {
+      const labelRows = Array.from(labelsCol.querySelectorAll(':scope > div'));
+      const valueRows = Array.from(valuesCol.querySelectorAll(':scope > div'));
+      const idx = labelRows.findIndex((d) => normIncludes(d.textContent));
+      if (idx >= 0 && idx < valueRows.length) {
+        const v = ws(valueRows[idx].textContent);
+        if (v) return v;
+      }
+    }
+
+    return null;
+  }
+
+  function extractCreatedDateFromTimeline() {
+    const root = document.querySelector('#edit-session');
+    if (!root) return null;
+
+    const timelineCard = findCard(root, 'Timeline');
+    if (!timelineCard) return null;
+
+    const body = timelineCard.querySelector(':scope > .card-body') || timelineCard.querySelector('.card-body');
+    if (!body) return null;
+
+    // The first timeline element contains the created timestamp in:
+    // <div class="timeline-content"> ... <small class="text-muted font-weight-bold">TIMESTAMP</small>
+    const createdSmall = body.querySelector('.timeline-content small.text-muted.font-weight-bold');
+    if (createdSmall) {
+      const v = ws(createdSmall.textContent);
+      if (v) return v;
+    }
+
+    const bell = body.querySelector(
+      'i.fa-bell, i.fas.fa-bell, i.fa.fa-bell, i[class*="fa-bell"], svg[data-icon="bell"], svg[aria-label*="bell" i]'
+    );
+    if (!bell) return null;
+
+    const container = bell.closest('li, .timeline-item, .timeline-block, .timeline, .d-flex, .row, div') || bell.parentElement;
+    if (!container) return null;
+
+    const rawText = ws(container.textContent);
+    if (!rawText) return null;
+
+    // Common timestamp patterns seen in the UI
+    const patterns = [
+      /\b\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, // 16.12.2025 12:29(:56)
+      /\b\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, // 2025-12-16 12:29(:56)
+      /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?\b/ // 2025-12-16T12:29(:56)
+    ];
+    for (const re of patterns) {
+      const m = rawText.match(re);
+      if (m) return m[0];
+    }
+
+    // Fallback: return the container text minus obvious labels
+    const cleaned = ws(rawText.replace(/\b(created|created at|lead created)\b\s*:?/gi, ''));
+    return cleaned || null;
+  }
+
+  function addCreatedDateToLeadTitleLine() {
+    const root = document.querySelector('#edit-session');
+    if (!root) return;
+
+    const created = extractCreatedDateFromTimeline();
+    if (!created) return;
+
+    // Primary: header-body -> first row -> <h6 class="h2 d-inline-block mb-0">Lead</h6>
+    const headerBody = document.querySelector('.header-body');
+    if (headerBody) {
+      const firstHeaderRow = headerBody.querySelector('.row.align-items-center.py-4');
+      if (firstHeaderRow) {
+        const h6Candidates = Array.from(firstHeaderRow.querySelectorAll('h6.h2'));
+        const leadH6 = h6Candidates.find((h6) => ws(h6.textContent).toLowerCase() === 'lead') || firstHeaderRow.querySelector('h6.h2');
+        if (leadH6) {
+          // Make the immediate container a flex row so we can push the created date to the right.
+          const container = leadH6.parentElement;
+          if (container) container.classList.add(LEAD_HEADER_TITLE_CLASS);
+
+          // Create a separate <h6> element for the created date (not appended into the existing Lead <h6>).
+          if (container && container.getAttribute(CREATED_DATE_RENDERED_ATTR) !== '1') {
+            const createdH6 = document.createElement('h6');
+            createdH6.className = `h2 d-inline-block mb-0 ${CREATED_DATE_CLASS}`;
+            createdH6.textContent = created;
+
+            // Insert right after the Lead title.
+            container.insertBefore(createdH6, leadH6.nextSibling);
+            container.setAttribute(CREATED_DATE_RENDERED_ATTR, '1');
+          }
+          return;
+        }
+      }
+    }
+
+    // Fallback: attach to "Lead" / "Comments" card header inside #edit-session
+    const leadHeader = Array.from(root.querySelectorAll('.card .card-header h3, .card-header h3')).find((h3) => {
+      return ws(h3.textContent).toLowerCase() === 'lead';
+    });
+
+    const commentsCard = findCard(root, 'Comments');
+    const commentsHeader = commentsCard
+      ? commentsCard.querySelector('.card .card-header h3') || commentsCard.querySelector('.card-header h3')
+      : null;
+
+    const headerTitle = leadHeader || commentsHeader;
+    if (!headerTitle) return;
+    if (headerTitle.getAttribute(CREATED_DATE_RENDERED_ATTR) === '1') return;
+
+    headerTitle.style.display = 'flex';
+    headerTitle.style.alignItems = 'center';
+
+    const span = document.createElement('span');
+    span.className = CREATED_DATE_CLASS;
+    span.textContent = created;
+    headerTitle.appendChild(span);
+
+    headerTitle.setAttribute(CREATED_DATE_RENDERED_ATTR, '1');
   }
 
   function adjustDataTablesSizing() {
@@ -748,11 +1142,11 @@
     });
   }
 
-  function hideColumnsInDataTables() {
-    const candidateTables = findCandidateTables();
-    if (!candidateTables.length) return;
+  function hideColumnsInDataTables(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
 
-    for (const baseTable of candidateTables) {
+    for (const baseTable of tables) {
       const indicesToRemove = getIndicesToRemoveFromTable(baseTable);
       if (!indicesToRemove.length) continue;
 
@@ -775,17 +1169,134 @@
     return /\/leads\/[0-9]+/.test(href) || href.includes('/leads/');
   }
 
-  function replaceEyeWithOpenButton() {
+  function getVisibleHeaderCells(table) {
+    const headerRow = getHeaderRow(table);
+    if (!headerRow) return [];
+    return Array.from(headerRow.querySelectorAll('th, td')).filter((c) => !c.classList.contains(HIDDEN_COL_CLASS));
+  }
+
+  function getVisibleRowCells(row) {
+    return Array.from(row.querySelectorAll('td, th')).filter((c) => !c.classList.contains(HIDDEN_COL_CLASS));
+  }
+
+  function getStatusColumnIndexForTable(table) {
+    if (!table) return -1;
+    const cached = statusColumnIndexCache.get(table);
+    if (typeof cached === 'number' && cached >= 0) return cached;
+
+    const headerCells = getVisibleHeaderCells(table);
+    if (!headerCells.length) return -1;
+
+    const idx = headerCells.findIndex((c) => {
+      const t = ws(c.textContent).toLowerCase();
+      return t === 'status' || t.includes('status');
+    });
+
+    if (idx >= 0) statusColumnIndexCache.set(table, idx);
+    return idx;
+  }
+
+  function applyStatusToCell(cell, status) {
+    if (!cell) return;
+    const st = ws(status);
+    if (!st) return;
+
+    const badge = cell.querySelector && cell.querySelector('.badge');
+    if (badge) {
+      badge.textContent = st;
+      return;
+    }
+
+    cell.textContent = st;
+  }
+
+  function updateLeadRowStatusOnList(leadId, status) {
+    const id = ws(leadId);
+    const st = ws(status);
+    if (!id || !st) return;
+
+    const btn = document.querySelector(`button[${OPEN_BTN_ATTR}="1"][${OPEN_BTN_LEAD_ID_ATTR}="${CSS.escape(id)}"]`);
+    let row = btn ? btn.closest('tr') : null;
+    if (!row) {
+      const link = document.querySelector(`a[href*="/leads/${CSS.escape(id)}"]`);
+      row = link ? link.closest('tr') : null;
+    }
+    if (!row) return;
+
+    const table = row.closest('table');
+    const statusIdx = getStatusColumnIndexForTable(table);
+    if (statusIdx < 0) return;
+
+    const cells = getVisibleRowCells(row);
+    if (statusIdx >= cells.length) return;
+    applyStatusToCell(cells[statusIdx], st);
+  }
+
+  function applyKnownStatusesToVisibleRows(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    for (const table of tables) {
+      const statusIdx = getStatusColumnIndexForTable(table);
+      if (statusIdx < 0) continue;
+
+      const rows = Array.from(table.querySelectorAll('tbody tr'));
+      for (const row of rows) {
+        const leadBtn = row.querySelector(`button[${OPEN_BTN_ATTR}="1"][${OPEN_BTN_LEAD_ID_ATTR}]`);
+        const leadId = leadBtn ? leadBtn.getAttribute(OPEN_BTN_LEAD_ID_ATTR) : null;
+        if (!leadId) continue;
+        const entry = leadStatusMap && typeof leadStatusMap === 'object' ? leadStatusMap[String(leadId)] : null;
+        const status = entry && typeof entry === 'object' ? entry.status : null;
+        if (!status) continue;
+
+        const cells = getVisibleRowCells(row);
+        if (statusIdx >= cells.length) continue;
+        applyStatusToCell(cells[statusIdx], status);
+      }
+    }
+  }
+
+  function setupLeadsListLiveStatusUpdates(candidateTables) {
+    if (document.documentElement.getAttribute(LIVE_STATUS_LIST_ATTR) === '1') return;
+    document.documentElement.setAttribute(LIVE_STATUS_LIST_ATTR, '1');
+
+    loadLeadStatusMapOnce().then(() => applyKnownStatusesToVisibleRows(candidateTables));
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+          if (areaName !== 'local') return;
+
+          if (changes && changes[LEAD_STATUS_STORAGE_KEY]) {
+            const next = changes[LEAD_STATUS_STORAGE_KEY].newValue;
+            leadStatusMap = next && typeof next === 'object' ? next : {};
+          }
+
+          if (changes && changes[LEAD_STATUS_LAST_EVENT_KEY]) {
+            const ev = changes[LEAD_STATUS_LAST_EVENT_KEY].newValue;
+            if (ev && ev.leadId && ev.status) {
+              updateLeadRowStatusOnList(ev.leadId, ev.status);
+              return;
+            }
+          }
+
+          // Fallback: if we can't identify the changed lead, re-apply to visible rows.
+          applyKnownStatusesToVisibleRows();
+        });
+      }
+    } catch {
+    }
+  }
+
+  function replaceEyeWithOpenButton(candidateTables) {
     loadOpenedLeadIdsOnce();
 
-    const candidateTables = findCandidateTables();
-    if (!candidateTables.length) return;
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
 
-    for (const table of candidateTables) {
-      const tds = Array.from(table.querySelectorAll('tbody td.text-center'));
+    for (const table of tables) {
+      const tds = table.querySelectorAll(`tbody td.text-center:not([${OPEN_BUTTON_REPLACED_ATTR}="1"])`);
       for (const td of tds) {
-        if (td.getAttribute(OPEN_BUTTON_REPLACED_ATTR) === '1') continue;
-
         const link = td.querySelector('a[href]');
         if (!link) continue;
 
@@ -805,7 +1316,7 @@
         btn.setAttribute(OPEN_BTN_ATTR, '1');
         if (leadId) btn.setAttribute(OPEN_BTN_LEAD_ID_ATTR, leadId);
         if (leadId && openedLeadIds.has(String(leadId))) {
-          btn.classList.add(OPENED_BTN_CLASS);
+          setOpenedButtonUI(btn);
         }
         btn.addEventListener('click', (e) => {
           e.preventDefault();
@@ -827,8 +1338,12 @@
     ensureStyles();
 
     if (isLeadsListPage()) {
-      hideColumnsInDataTables();
-      replaceEyeWithOpenButton();
+      const candidateTables = findCandidateTables();
+      hideColumnsInDataTables(candidateTables);
+      replaceEyeWithOpenButton(candidateTables);
+      replaceLeadIdCountryEmojiWithFlags(candidateTables);
+      removeLeadIdYearsHoverAndBeautify(candidateTables);
+      setupLeadsListLiveStatusUpdates(candidateTables);
       adjustDataTablesSizing();
     }
 
@@ -842,6 +1357,7 @@
 
       inlineCards();
       pairLeadDetails();
+      addCreatedDateToLeadTitleLine();
       ensureStatusLabel();
       addCountryRow();
       validatePhones();
@@ -853,6 +1369,7 @@
 
   let scheduled = false;
   const observer = new MutationObserver(() => {
+    if (!isLeadsArea()) return;
     if (scheduled) return;
     scheduled = true;
     requestAnimationFrame(() => {

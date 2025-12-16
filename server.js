@@ -127,6 +127,7 @@ app.post('/api/live/reset', (req, res) => {
 app.post('/api/leads/status-set', (req, res) => {
     const leadId = req.body && req.body.leadId != null ? String(req.body.leadId).trim() : '';
     const status = req.body && req.body.status != null ? String(req.body.status).trim() : '';
+    const url = req.body && req.body.url != null ? String(req.body.url).trim() : '';
     if (!leadId) return res.status(400).json({ error: 'leadId required' });
 
     // Only count the first status-change we ever record per lead id
@@ -136,6 +137,9 @@ app.post('/api/leads/status-set', (req, res) => {
 
     countedLeadIds.add(leadId);
     liveCount = (parseInt(liveCount, 10) || 0) + 1;
+
+    console.log(`[LEAD COUNTED] leadId=${leadId} status="${status}" count=${liveCount}${url ? ` url=${url}` : ''}`);
+
     saveLiveState();
     broadcastLiveCount();
     res.json({ count: liveCount, counted: true, leadId, status });
