@@ -110,9 +110,39 @@ body{
   cursor: pointer;
   transition: background-color 0.12s ease;
   width: calc(var(--stepper-btn-w) * 2 + var(--stepper-gap));
+  margin-bottom: 2rem;
 }
 
 .reset-button:hover{ background-color: #3b3b3b; }
+
+.category-buttons{
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
+}
+
+.category-button{
+  flex: 1 1 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background-color: var(--panel);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 0 0.4rem;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+
+.category-button:hover{
+  background-color: #1f1f1f;
+  transform: translateY(-1px);
+}
 
 .status{
   min-height: 18px;

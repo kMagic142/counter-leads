@@ -6,6 +6,9 @@ const counterDisplay = document.getElementById('counterDisplay');
 const plusButton = document.getElementById('plusButton');
 const minusButton = document.getElementById('minusButton');
 const sendButton = document.getElementById('sendButton');
+const noDealButton = document.getElementById('noDealButton');
+const withDealButton = document.getElementById('withDealButton');
+const companyButton = document.getElementById('companyButton');
 const statusEl = document.getElementById('status');
 
 function setStatus(msg) {
@@ -51,6 +54,18 @@ async function addToHistory(countValue) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       count: countValue,
+      timestamp: new Date().toISOString()
+    })
+  });
+}
+
+async function addCategoryRow(categoryName, text) {
+  await fetch(`${API_URL}/category`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      categoryName,
+      text: text || '',
       timestamp: new Date().toISOString()
     })
   });
@@ -125,6 +140,29 @@ async function init() {
         setStatus('Server offline');
       }
     });
+  }
+
+  async function handleCategoryAdd(categoryName) {
+    const text = prompt('Enter text for the new entry:');
+    if (text == null) return;
+    try {
+      await addCategoryRow(categoryName, text);
+      setStatus('Added');
+      setTimeout(() => setStatus(''), 900);
+    } catch {
+      setStatus('Server offline');
+    }
+  }
+
+  if (noDealButton) {
+    noDealButton.addEventListener('click', () => handleCategoryAdd('Fara Deal Existent'));
+  }
+  if (withDealButton) {
+    // Matches the "Lost Deal" tab in the main UI.
+    withDealButton.addEventListener('click', () => handleCategoryAdd('Cu deal existent dar lost'));
+  }
+  if (companyButton) {
+    companyButton.addEventListener('click', () => handleCategoryAdd('Alta companie la care au aplicat'));
   }
 }
 

@@ -297,9 +297,18 @@
       (e) => {
         const t = e.target;
         if (!t) return;
-        // If you click within the status dropdown/menu, re-check after a short delay.
-        const clickedInStatus = !!(t.closest && (t.closest('#statusDropdown') || t.closest('[aria-labelledby="statusDropdown"]')));
-        if (clickedInStatus) scheduleCheck();
+
+        const clickedInStatus = !!(
+          t.closest && (t.closest('#statusDropdown') || t.closest('[aria-labelledby="statusDropdown"]'))
+        );
+        if (!clickedInStatus) return;
+
+        // Send immediately on menu click (server dedupes by leadId).
+        const clickedText = extractStatusValueFromText(t.textContent);
+        sendStatus(clickedText || getCurrentStatus() || '');
+
+        // Also re-check after a short delay in case UI updates async.
+        scheduleCheck();
       },
       true
     );
