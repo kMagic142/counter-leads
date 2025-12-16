@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Taxe Leads Tweaks",
+  "version": "1.0.0",
+  "description": "Tweaks Taxe Leads dashboard table columns and Open buttons.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://dashboard.taxe.ro/leads*",
+        "https://taxe.amdav.ro/leads*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -35,3 +35,6 @@ logs/
 # Build output
 dist/
 build/
+
+# Temporary files
+source/
