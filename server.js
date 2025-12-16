@@ -180,7 +180,7 @@ function formatSheetTimestamp(dInput) {
     const hh = pad2(d.getHours());
     const mm = pad2(d.getMinutes());
     const ss = pad2(d.getSeconds());
-    return `${month}/${day}/${year} ${hh}:${mm}:${ss}`;
+    return `${day}.${month}.${year} ${hh}:${mm}:${ss}`;
 }
 
 async function writeNextEmptyRowAtoE(valuesAtoE) {
