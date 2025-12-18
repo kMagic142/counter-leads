@@ -59,6 +59,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const COPILOT_TOOLTIP_BOUND_ATTR = 'data-copilot-tooltip-bound';
   let copilotTooltipListenersInstalled = false;
 
+  const COPILOT_BAD_PHONE_TOOLTIP_ID = 'copilot-bad-phone-tooltip-bubble';
+  const COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR = 'data-copilot-bad-phone-tooltip';
+  let badPhoneTooltipListenersInstalled = false;
+  let activeBadPhoneEl = null;
+  let badPhoneEls = new Set();
+
   const COPILOT_THEME_ATTR = 'data-copilot-theme';
   const COPILOT_THEME_STORAGE_KEY = 'copilot_dashboard_theme_v1';
   const COPILOT_THEME_TOGGLE_ID = 'copilot-theme-toggle';
@@ -195,6 +201,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (!text.trim()) return;
 
     const bubble = ensureCopilotTooltipBubble();
+    // Keep the tooltip above any page overlays by moving it to the end of <body>.
+    try {
+      const host = document.body || document.documentElement;
+      if (host && bubble.parentElement === host) host.appendChild(bubble);
+    } catch {
+    }
     bubble.textContent = text;
     bubble.style.display = 'block';
 
@@ -225,48 +237,198 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (copilotTooltipListenersInstalled) return;
     copilotTooltipListenersInstalled = true;
 
-    // Hide on scroll/resize so it never gets stuck.
-    window.addEventListener('scroll', hideCopilotTooltip, true);
-    window.addEventListener('resize', hideCopilotTooltip, true);
+    let activeTooltipTarget = null;
+
+    const findTooltipTarget = (node, evt) => {
+      try {
+        if (node && node.closest) {
+          const closest = node.closest(`[${COPILOT_TOOLTIP_TEXT_ATTR}]`);
+          if (closest) {
+            const v = closest.getAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+            if (v && String(v).trim()) return closest;
+          }
+        }
+      } catch {
+      }
+
+      try {
+        const path = evt && typeof evt.composedPath === 'function' ? evt.composedPath() : null;
+        if (Array.isArray(path)) {
+          for (const p of path) {
+            if (!p || !p.getAttribute) continue;
+            const v = p.getAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+            if (v && String(v).trim()) return p;
+          }
+        }
+      } catch {
+      }
+
+      return null;
+    };
+
+    // Simple delegated hover: show on enter, hide on leave.
+    // Phones use a dedicated tooltip system; this is for generic tooltips only.
+    document.addEventListener(
+      'mouseover',
+      (e) => {
+        const target = findTooltipTarget(e.target, e);
+        if (!target) return;
+        if (target === activeTooltipTarget) return;
+        activeTooltipTarget = target;
+        showCopilotTooltipFor(activeTooltipTarget);
+      },
+      true
+    );
+
+    document.addEventListener(
+      'mouseout',
+      (e) => {
+        if (!activeTooltipTarget) return;
+        const rt = e && e.relatedTarget && e.relatedTarget.closest ? e.relatedTarget : null;
+        if (rt && activeTooltipTarget.contains(rt)) return;
+
+        const next = findTooltipTarget(rt, e);
+        if (next) {
+          activeTooltipTarget = next;
+          showCopilotTooltipFor(activeTooltipTarget);
+          return;
+        }
+
+        activeTooltipTarget = null;
+        hideCopilotTooltip();
+      },
+      true
+    );
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (activeTooltipTarget) showCopilotTooltipFor(activeTooltipTarget);
+      },
+      true
+    );
+
+    window.addEventListener('resize', () => {
+      if (activeTooltipTarget) showCopilotTooltipFor(activeTooltipTarget);
+    });
+
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') hideCopilotTooltip();
+      if (e.key === 'Escape') {
+        activeTooltipTarget = null;
+        hideCopilotTooltip();
+      }
     });
   }
 
-  function setCopilotTooltip(el, text) {
-    if (!el) return;
-    const t = String(text || '').replace(/\r\n/g, '\n').trim();
+  function ensureBadPhoneTooltipBubble() {
+    let bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    if (bubble) return bubble;
 
-    // Avoid browser/toolkit tooltips.
-    try {
-      el.removeAttribute('title');
-    } catch {
-    }
-
-    if (!t) {
-      el.removeAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
-      hideCopilotTooltip();
-      return;
-    }
-
-    ensureCopilotTooltipListeners();
-    el.setAttribute(COPILOT_TOOLTIP_TEXT_ATTR, t);
-
-    if (el.getAttribute(COPILOT_TOOLTIP_BOUND_ATTR) === '1') return;
-    el.setAttribute(COPILOT_TOOLTIP_BOUND_ATTR, '1');
-
-    el.addEventListener('mouseenter', () => showCopilotTooltipFor(el));
-    el.addEventListener('mouseleave', hideCopilotTooltip);
-    el.addEventListener('focus', () => showCopilotTooltipFor(el));
-    el.addEventListener('blur', hideCopilotTooltip);
+    bubble = document.createElement('div');
+    bubble.id = COPILOT_BAD_PHONE_TOOLTIP_ID;
+    bubble.style.display = 'none';
+    (document.body || document.documentElement).appendChild(bubble);
+    return bubble;
   }
 
+  function hideBadPhoneTooltip() {
+    const bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    if (!bubble) return;
+    bubble.style.display = 'none';
+    bubble.textContent = '';
+  }
+
+  function positionBadPhoneTooltipFor(el) {
+    const bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    if (!bubble || !el) return;
+
+    const rect = el.getBoundingClientRect();
+    const bw = bubble.offsetWidth || 0;
+    const bh = bubble.offsetHeight || 0;
+    const margin = 8;
+
+    const centerX = rect.left + rect.width / 2;
+    let left = Math.round(centerX - bw / 2);
+    left = Math.max(margin, Math.min(left, window.innerWidth - bw - margin));
+
+    let top = Math.round(rect.top - bh - margin);
+    if (top < margin) top = Math.round(rect.bottom + margin);
+    top = Math.max(margin, Math.min(top, window.innerHeight - bh - margin));
+
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${top}px`;
+  }
+
+  function showBadPhoneTooltipFor(el) {
+    if (!el) return;
+    const text = String(el.getAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR) || '');
+    if (!text.trim()) return;
+
+    const bubble = ensureBadPhoneTooltipBubble();
+    if (bubble.textContent !== text) bubble.textContent = text;
+    bubble.style.display = 'block';
+
+    // Position after content is set.
+    bubble.style.left = '-9999px';
+    bubble.style.top = '-9999px';
+    positionBadPhoneTooltipFor(el);
+  }
+
+  function ensureBadPhoneTooltipListeners() {
+    if (badPhoneTooltipListenersInstalled) return;
+    badPhoneTooltipListenersInstalled = true;
+
+    document.addEventListener(
+      'mousemove',
+      (e) => {
+        let under = null;
+        try {
+          under = document.elementFromPoint(e.clientX, e.clientY);
+        } catch {
+        }
+
+        const hovered = under && under.closest ? under.closest(`.copilot-bad-phone[${COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR}]`) : null;
+        if (hovered === activeBadPhoneEl) return;
+
+        activeBadPhoneEl = hovered;
+        if (!activeBadPhoneEl) {
+          hideBadPhoneTooltip();
+        } else {
+          showBadPhoneTooltipFor(activeBadPhoneEl);
+        }
+      },
+      true
+    );
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (activeBadPhoneEl) positionBadPhoneTooltipFor(activeBadPhoneEl);
+      },
+      true
+    );
+
+    window.addEventListener('resize', () => {
+      if (activeBadPhoneEl) positionBadPhoneTooltipFor(activeBadPhoneEl);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        activeBadPhoneEl = null;
+        hideBadPhoneTooltip();
+      }
+    });
+  }
+
+  const COPILOT_STYLE_ID = 'copilot-injected-styles';
+
   function ensureStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
+    let style = document.getElementById(COPILOT_STYLE_ID);
+    if (style) return;
+
+    style = document.createElement('style');
+    style.id = COPILOT_STYLE_ID;
     style.textContent = `
-      .${HIDDEN_COL_CLASS} { display: none !important; }
 
       button.${OPENED_BTN_CLASS} {
         background-color: rgba(0, 123, 255, 0.45) !important;
@@ -441,12 +603,40 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         max-width: 420px;
         padding: 6px 8px;
         border-radius: 6px;
-        background: rgba(108, 117, 125, 0.96);
+        background: rgba(33, 37, 41, 0.92);
         color: #fff;
         font-size: 12px;
         line-height: 1.35;
         white-space: pre-line;
         pointer-events: none;
+      }
+
+      html[${COPILOT_THEME_ATTR}='dark'] #${COPILOT_TOOLTIP_ID} {
+        background: var(--copilot-surface-2);
+        color: var(--copilot-text);
+        border: 1px solid var(--copilot-border);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
+      }
+
+      #${COPILOT_BAD_PHONE_TOOLTIP_ID} {
+        position: fixed;
+        z-index: 2147483647;
+        max-width: 520px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: rgba(33, 37, 41, 0.92);
+        color: #fff;
+        font-size: 12px;
+        line-height: 1.35;
+        white-space: pre-line;
+        pointer-events: none;
+      }
+
+      html[${COPILOT_THEME_ATTR}='dark'] #${COPILOT_BAD_PHONE_TOOLTIP_ID} {
+        background: var(--copilot-surface-2);
+        color: var(--copilot-text);
+        border: 1px solid var(--copilot-border);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
       }
 
       #${COPILOT_THEME_TOGGLE_ID} {
@@ -640,6 +830,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       html[${COPILOT_THEME_ATTR}='dark'] .table-custom th,
       html[${COPILOT_THEME_ATTR}='dark'] .table-custom td {
         border-color: var(--copilot-border) !important;
+      }
+
+      /* Phone validation: keep the red border visible even though we override '.border' above. */
+      html[${COPILOT_THEME_ATTR}='dark'] .copilot-bad-phone,
+      html[${COPILOT_THEME_ATTR}='dark'] .copilot-bad-phone.border {
+        border-color: var(--copilot-red-2) !important;
+        display: inline-block;
+        cursor: help;
       }
 
       /* Remove the bright "card borders" look. Keep table cell separators subtle via --copilot-border above. */
@@ -1869,6 +2067,35 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   const SIDENAV_FALLBACK_ATTR = 'data-copilot-sidenav-fallback';
+  const SIDENAV_STATE_KEY = 'copilot-sidenav-pinned';
+
+  function readPersistedSidenavPinned() {
+    try {
+      const v = localStorage.getItem(SIDENAV_STATE_KEY);
+      if (v === '1') return true;
+      if (v === '0') return false;
+    } catch {
+    }
+    return null;
+  }
+
+  function persistSidenavPinned(pinned) {
+    try {
+      localStorage.setItem(SIDENAV_STATE_KEY, pinned ? '1' : '0');
+    } catch {
+    }
+  }
+
+  function computeSidenavPinnedFromBody() {
+    const body = document.body;
+    if (!body) return null;
+    const pinned = body.classList.contains('g-sidenav-pinned');
+    const hidden = body.classList.contains('g-sidenav-hidden');
+    if (pinned && !hidden) return true;
+    if (hidden && !pinned) return false;
+    // Mixed/unknown; do not persist.
+    return null;
+  }
 
   function pinSidenavFallback() {
     const body = document.body;
@@ -1902,6 +2129,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (!body) return;
 
     body.classList.remove('g-sidenav-pinned');
+    body.classList.remove('g-sidenav-show');
     body.classList.add('g-sidenav-hidden');
 
     document.querySelectorAll('.sidenav-toggler').forEach((t) => {
@@ -1919,6 +2147,23 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (document.documentElement.getAttribute(SIDENAV_FALLBACK_ATTR) === '1') return;
     document.documentElement.setAttribute(SIDENAV_FALLBACK_ATTR, '1');
 
+    const applyPersisted = () => {
+      const pref = readPersistedSidenavPinned();
+      if (pref === null) return;
+      if (!document.body) return;
+      if (!document.getElementById('sidenav-main')) return;
+
+      // Only adjust if we can confidently determine current state.
+      const current = computeSidenavPinnedFromBody();
+      if (current === pref) return;
+      if (pref) pinSidenavFallback();
+      else unpinSidenavFallback();
+    };
+
+    // Apply persisted state once body/layout exists.
+    setTimeout(applyPersisted, 0);
+    window.addEventListener('load', applyPersisted, { once: true });
+
     document.addEventListener('click', (e) => {
       const el = e.target && e.target.closest ? e.target.closest('[data-action]') : null;
       if (!el) return;
@@ -1930,10 +2175,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       setTimeout(() => {
         const after = document.body ? document.body.className : '';
         // If Argon's handler ran, do nothing.
-        if (after !== before) return;
+        if (after === before) {
+          if (action === 'sidenav-pin') pinSidenavFallback();
+          if (action === 'sidenav-unpin') unpinSidenavFallback();
+        }
 
-        if (action === 'sidenav-pin') pinSidenavFallback();
-        if (action === 'sidenav-unpin') unpinSidenavFallback();
+        const state = computeSidenavPinnedFromBody();
+        if (state !== null) persistSidenavPinned(state);
       }, 0);
     });
   }
@@ -3018,11 +3266,25 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function setPhoneDecoration(el, validation) {
     if (!el) return;
 
-    el.classList.remove('border', 'border-danger', 'rounded', 'px-1');
-    setCopilotTooltip(el, '');
+    // Prefer decorating the actual interactive element (so hover hits the tooltip target).
+    const target = (() => {
+      if (!el || !el.querySelector) return el;
+      if (el.tagName && String(el.tagName).toLowerCase() === 'input') return el;
+      return (
+        el.querySelector('input[type="tel"], input[name*="phone" i], input[id*="phone" i], a[href^="tel"], a[href*="tel" i]') ||
+        el
+      );
+    })();
+
+    // Phones use a dedicated tooltip system (not the generic one) to avoid flicker.
+    target.classList.remove('border', 'border-danger', 'rounded', 'px-1', 'copilot-bad-phone');
+    try {
+      target.removeAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR);
+    } catch {
+    }
 
     if (!validation.ok) {
-      el.classList.add('border', 'border-danger', 'rounded', 'px-1');
+      target.classList.add('border', 'border-danger', 'rounded', 'px-1', 'copilot-bad-phone');
 
       const parts = [...(validation.errors || [])];
       const uniqueSuggestions = Array.from(
@@ -3041,8 +3303,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         }
       }
 
-      setCopilotTooltip(el, parts.filter(Boolean).join('\n'));
+      const msg = parts.filter(Boolean).join('\n');
+      try {
+        target.setAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR, msg);
+      } catch {
+      }
     }
+
+    return target;
   }
 
   function pairLeadDetails() {
@@ -3126,11 +3394,21 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const targets = findPhoneTargets();
     if (!targets.length) return;
 
+    const nextBad = new Set();
+
     for (const { el, getValue } of targets) {
       const raw = getValue();
       const validation = validatePhone(raw);
-      setPhoneDecoration(el, validation);
+      const decorated = setPhoneDecoration(el, validation);
+      if (decorated && !validation.ok) nextBad.add(decorated);
     }
+
+    badPhoneEls = nextBad;
+    if (activeBadPhoneEl && !badPhoneEls.has(activeBadPhoneEl)) {
+      activeBadPhoneEl = null;
+      hideBadPhoneTooltip();
+    }
+    if (badPhoneEls.size) ensureBadPhoneTooltipListeners();
   }
 
   function addCountryRow() {
@@ -3441,7 +3719,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       if (v === 'dark' || v === 'light') applyTheme(v);
     });
     ensureStyles();
-      ensureLegacyPurpleReplacements();
+    ensureLegacyPurpleReplacements();
     applyTheme(getStoredTheme());
     ensureThemeToggle();
     ensureWhiteBrandLogo();
