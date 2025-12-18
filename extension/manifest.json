@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Taxe.ro Leads Tweaks",
+  "name": "Taxe.ro Dashboard Tweaks",
   "version": "1.0.0",
-  "description": "Tweaks Taxe Leads Dashboard to make it more usable",
+  "description": "Tweaks the Taxe.ro Dashboard to add useful features",
   "permissions": ["storage"],
   "host_permissions": [
     "http://localhost:3000/*",

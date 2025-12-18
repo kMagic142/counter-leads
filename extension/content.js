@@ -430,6 +430,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     style.id = COPILOT_STYLE_ID;
     style.textContent = `
 
+      /* Leads list: hide columns we mark via JS (utm_source, last_step, step). */
+      .${HIDDEN_COL_CLASS} {
+        display: none !important;
+      }
+
+      /* Argon sometimes forces legacy purple/dark-blue headings; normalize to theme text in dark mode. */
+      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item h5,
+      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item h5.mb-1 {
+        color: var(--copilot-text) !important;
+      }
+
       button.${OPENED_BTN_CLASS} {
         background-color: rgba(0, 123, 255, 0.45) !important;
         border-color: rgba(0, 123, 255, 0.35) !important;
