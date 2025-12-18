@@ -6,6 +6,7 @@ This is a small Chrome extension that runs on the Leads dashboards and:
 - Replaces the **fa-eye** icon inside `td.text-center` with an **Open** button:
   - `<button class="btn btn-primary btn-sm" type="button">Open</button>`
   - Clicking the button opens the original `href` from the replaced link.
+- Adds a **Dark mode** toggle (bottom-left). The setting is saved in `localStorage`.
 
 ## Where it runs
 
@@ -19,6 +20,10 @@ And only if the page title (normalized whitespace) equals:
 - `Taxe Dashboard Leads`
 
 ## Install (Load unpacked)
+
+Before loading unpacked (or after editing `content.js`), build the bundled content script:
+
+- From repo root: `npm run build:extension`
 
 1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer mode**

@@ -4,7 +4,12 @@
   "version": "1.0.0",
   "description": "Tweaks Taxe Leads Dashboard to make it more usable",
   "permissions": ["storage"],
-  "host_permissions": ["http://localhost:3000/*"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://dashboard.taxe.ro/*",
+    "https://taxe.amdav.ro/*",
+    "https://taxe.ro/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -19,10 +24,10 @@
   "content_scripts": [
     {
       "matches": [
-        "https://dashboard.taxe.ro/leads*",
-        "https://taxe.amdav.ro/leads*"
+        "https://dashboard.taxe.ro/*",
+        "https://taxe.amdav.ro/*"
       ],
-      "js": ["content.js"],
+      "js": ["content.bundle.js"],
       "run_at": "document_idle"
     }
   ]

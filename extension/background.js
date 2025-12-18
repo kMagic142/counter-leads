@@ -28,6 +28,37 @@ function flashCountBadge(newCount) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === 'COPILOT_FETCH_TEXT') {
+    const url = msg.url;
+    if (!url || typeof url !== 'string') {
+      try {
+        sendResponse({ ok: false, error: 'Missing url' });
+      } catch {
+      }
+      return false;
+    }
+
+    fetch(url)
+      .then((r) => {
+        if (!r || !r.ok) throw new Error(`Fetch failed: ${r ? r.status : 'no response'}`);
+        return r.text();
+      })
+      .then((text) => {
+        try {
+          sendResponse({ ok: true, text });
+        } catch {
+        }
+      })
+      .catch((e) => {
+        try {
+          sendResponse({ ok: false, error: String(e && e.message ? e.message : e) });
+        } catch {
+        }
+      });
+
+    return true;
+  }
+
   if (!msg || msg.type !== 'COPILOT_LEAD_STATUS_CHANGED') return;
 
   const payload = {
