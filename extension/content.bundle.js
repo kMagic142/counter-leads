@@ -2280,6 +2280,9 @@
     const LEAD_FLAG_REPLACED_ATTR = "data-copilot-lead-flag-replaced";
     const LEAD_FLAG_CLASS = "copilot-lead-flag";
     const LEAD_YEARS_FORMATTED_ATTR = "data-copilot-years-formatted";
+    const LEAD_FLAGS_OBSERVER_ATTR = "data-copilot-lead-flags-observer";
+    const leadFlagsObserverByTable = /* @__PURE__ */ new WeakMap();
+    let leadFlagsObserverSuppression = 0;
     const STATUS_TRACKING_ATTR = "data-copilot-status-tracking";
     const STATUS_DEBOUNCE_MS = 350;
     const LEAD_STATUS_STORAGE_KEY = "copilot_lead_status_map_v1";
@@ -2508,6 +2511,23 @@
           hideCopilotTooltip();
         }
       });
+    }
+    function setCopilotTooltip(el, text) {
+      if (!el || !el.setAttribute) return;
+      const t = String(text || "").trim();
+      if (!t) {
+        try {
+          el.removeAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+        } catch {
+        }
+        return;
+      }
+      el.setAttribute(COPILOT_TOOLTIP_TEXT_ATTR, t);
+      try {
+        el.setAttribute(COPILOT_TOOLTIP_BOUND_ATTR, "1");
+      } catch {
+      }
+      ensureCopilotTooltipListeners();
     }
     function ensureBadPhoneTooltipBubble() {
       let bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
@@ -4483,34 +4503,299 @@ ${inner}}
     function replaceLeadIdCountryEmojiWithFlags(candidateTables) {
       const tables = candidateTables || findCandidateTables();
       if (!tables.length) return;
-      for (const table of tables) {
-        const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector("tbody");
-        if (!body) continue;
-        const rows = body.querySelectorAll('tr[role="row"]');
-        for (const row of rows) {
-          const leadCellSpan = row.querySelector("td.sorting_1 span[title]") || row.querySelector("td.sorting_1 span") || row.querySelector("td.sorting_1") || row.querySelector("td:first-child span") || row.querySelector("td:first-child");
-          if (!leadCellSpan) continue;
-          if (leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === "1") continue;
-          if (leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`)) {
+      leadFlagsObserverSuppression++;
+      try {
+        const createInlineFlagSvg = (code) => {
+          const svgNS = "http://www.w3.org/2000/svg";
+          const svg = document.createElementNS(svgNS, "svg");
+          svg.setAttribute("width", "18");
+          svg.setAttribute("height", "12");
+          svg.setAttribute("viewBox", "0 0 18 12");
+          svg.setAttribute("aria-hidden", "true");
+          svg.style.display = "block";
+          const stripes = code === "de" ? [
+            { y: 0, fill: "#000" },
+            { y: 4, fill: "#DD0000" },
+            { y: 8, fill: "#FFCE00" }
+          ] : [
+            { y: 0, fill: "#AE1C28" },
+            { y: 4, fill: "#FFF" },
+            { y: 8, fill: "#21468B" }
+          ];
+          for (const s of stripes) {
+            const rect = document.createElementNS(svgNS, "rect");
+            rect.setAttribute("width", "18");
+            rect.setAttribute("height", "4");
+            rect.setAttribute("y", String(s.y));
+            rect.setAttribute("fill", s.fill);
+            svg.appendChild(rect);
+          }
+          return svg;
+        };
+        const stripLeadingTextMarker = (container) => {
+          try {
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+            const first = walker.nextNode();
+            if (!first || typeof first.nodeValue !== "string") return { hadDE: false, hadNL: false };
+            const raw = first.nodeValue;
+            const m = raw.match(/^\s*(DE|NL)\s+/i);
+            if (!m) return { hadDE: false, hadNL: false };
+            const code = String(m[1] || "").toLowerCase();
+            first.nodeValue = raw.replace(/^\s*(DE|NL)\s+/i, "");
+            return { hadDE: code === "de", hadNL: code === "nl" };
+          } catch {
+          }
+          return { hadDE: false, hadNL: false };
+        };
+        const detectCountryFromAttributes = (node) => {
+          let hadDE = false;
+          let hadNL = false;
+          try {
+            if (!node || !node.attributes) return { hadDE, hadNL };
+            const attrs = Array.from(node.attributes);
+            for (const a of attrs) {
+              const v = String(a && a.value || "");
+              if (!v) continue;
+              if (v.includes("\u{1F1E9}\u{1F1EA}")) hadDE = true;
+              if (v.includes("\u{1F1F3}\u{1F1F1}")) hadNL = true;
+              if (!hadDE && !hadNL) {
+                if (/(^|[\s>])DE\s+/i.test(v)) hadDE = true;
+                if (/(^|[\s>])NL\s+/i.test(v)) hadNL = true;
+              }
+              if (hadDE || hadNL) break;
+            }
+          } catch {
+          }
+          return { hadDE, hadNL };
+        };
+        const trimLeadingWhitespaceText = (container) => {
+          try {
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+            const first = walker.nextNode();
+            if (!first || typeof first.nodeValue !== "string") return;
+            first.nodeValue = first.nodeValue.replace(/^\s+/, "");
+          } catch {
+          }
+        };
+        const hasCountryMarkerNow = (container, row) => {
+          try {
+            const text = String(container && container.textContent || "");
+            if (text.includes("\u{1F1E9}\u{1F1EA}") || text.includes("\u{1F1F3}\u{1F1F1}")) return true;
+            if (/^\s*(DE|NL)\s+/i.test(text)) return true;
+          } catch {
+          }
+          try {
+            if (container && container.getAttribute) {
+              const t1 = String(container.getAttribute("title") || "");
+              const t2 = String(container.getAttribute("data-original-title") || "");
+              if (t1.includes("\u{1F1E9}\u{1F1EA}") || t1.includes("\u{1F1F3}\u{1F1F1}") || t2.includes("\u{1F1E9}\u{1F1EA}") || t2.includes("\u{1F1F3}\u{1F1F1}")) return true;
+            }
+          } catch {
+          }
+          const fromRowAttrs = detectCountryFromAttributes(row);
+          return !!fromRowAttrs.hadDE || !!fromRowAttrs.hadNL;
+        };
+        for (const table of tables) {
+          const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector("tbody");
+          if (!body) continue;
+          const rows = body.querySelectorAll('tr[role="row"]');
+          for (const row of rows) {
+            const leadCellSpan = row.querySelector("td.sorting_1 span[title]") || row.querySelector("td.sorting_1 span") || row.querySelector("td.sorting_1") || row.querySelector("td:first-child span") || row.querySelector("td:first-child");
+            if (!leadCellSpan) continue;
+            try {
+              if (leadCellSpan.querySelectorAll) {
+                const existing = leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`);
+                if (existing && existing.length > 1) {
+                  for (let i = 1; i < existing.length; i++) existing[i].remove();
+                }
+              }
+            } catch {
+            }
+            const alreadyHasFlag = !!(leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`));
+            const markerStillPresent = hasCountryMarkerNow(leadCellSpan, row);
+            if (alreadyHasFlag && !markerStillPresent) {
+              leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, "1");
+              continue;
+            }
+            if (leadCellSpan.getAttribute && leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === "1") {
+              if (markerStillPresent) {
+                try {
+                  leadCellSpan.removeAttribute(LEAD_FLAG_REPLACED_ATTR);
+                } catch {
+                }
+              } else {
+                continue;
+              }
+            }
+            let hadDE = false;
+            let hadNL = false;
+            const fromRowAttrs = detectCountryFromAttributes(row);
+            hadDE = hadDE || !!fromRowAttrs.hadDE;
+            hadNL = hadNL || !!fromRowAttrs.hadNL;
+            const fromText = stripCountryEmojiFromTextNodes(leadCellSpan);
+            hadDE = hadDE || !!fromText.hadDE;
+            hadNL = hadNL || !!fromText.hadNL;
+            if (fromText.hadDE || fromText.hadNL) trimLeadingWhitespaceText(leadCellSpan);
+            if (!hadDE && !hadNL) {
+              const fromPrefix = stripLeadingTextMarker(leadCellSpan);
+              hadDE = hadDE || !!fromPrefix.hadDE;
+              hadNL = hadNL || !!fromPrefix.hadNL;
+              if (fromPrefix.hadDE || fromPrefix.hadNL) trimLeadingWhitespaceText(leadCellSpan);
+            }
+            const findEmojiAttrNode = () => {
+              const candidates = [];
+              candidates.push(leadCellSpan);
+              try {
+                if (leadCellSpan.querySelector) {
+                  const d = leadCellSpan.querySelector(
+                    '[title*="\u{1F1E9}\u{1F1EA}"],[title*="\u{1F1F3}\u{1F1F1}"],[data-original-title*="\u{1F1E9}\u{1F1EA}"],[data-original-title*="\u{1F1F3}\u{1F1F1}"]'
+                  );
+                  if (d) candidates.push(d);
+                }
+              } catch {
+              }
+              for (const n of candidates) {
+                if (!n || !n.getAttribute) continue;
+                const t1 = String(n.getAttribute("title") || "");
+                const t2 = String(n.getAttribute("data-original-title") || "");
+                if (t1.includes("\u{1F1E9}\u{1F1EA}") || t1.includes("\u{1F1F3}\u{1F1F1}") || t2.includes("\u{1F1E9}\u{1F1EA}") || t2.includes("\u{1F1F3}\u{1F1F1}")) return n;
+              }
+              return null;
+            };
+            const attrNode = findEmojiAttrNode();
+            if (attrNode && attrNode.getAttribute) {
+              const t1 = String(attrNode.getAttribute("title") || "");
+              const t2 = String(attrNode.getAttribute("data-original-title") || "");
+              hadDE = hadDE || t1.includes("\u{1F1E9}\u{1F1EA}") || t2.includes("\u{1F1E9}\u{1F1EA}");
+              hadNL = hadNL || t1.includes("\u{1F1F3}\u{1F1F1}") || t2.includes("\u{1F1F3}\u{1F1F1}");
+              try {
+                if (t1) attrNode.setAttribute("title", t1.replace(/🇩🇪|🇳🇱/g, ""));
+              } catch {
+              }
+              try {
+                if (t2) attrNode.setAttribute("data-original-title", t2.replace(/🇩🇪|🇳🇱/g, ""));
+              } catch {
+              }
+            }
+            if (!hadDE && !hadNL) continue;
+            if (leadCellSpan.removeAttribute) leadCellSpan.removeAttribute("title");
+            try {
+              if (leadCellSpan.querySelectorAll) {
+                leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`).forEach((n) => n.remove());
+              }
+            } catch {
+            }
+            const flag = document.createElement("span");
+            flag.className = LEAD_FLAG_CLASS;
+            flag.style.display = "inline-block";
+            flag.style.width = "18px";
+            flag.style.height = "12px";
+            flag.style.marginRight = "6px";
+            flag.style.verticalAlign = "-2px";
+            flag.style.lineHeight = "0";
+            const svg = createInlineFlagSvg(hadDE ? "de" : "nl");
+            flag.appendChild(svg);
+            if (hadDE) {
+              flag.setAttribute("data-flag", "de");
+              flag.setAttribute("aria-label", "Germany");
+              setCopilotTooltip(flag, "Germany");
+            } else {
+              flag.setAttribute("data-flag", "nl");
+              flag.setAttribute("aria-label", "Netherlands");
+              setCopilotTooltip(flag, "Netherlands");
+            }
+            leadCellSpan.insertBefore(flag, leadCellSpan.firstChild);
             leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, "1");
-            continue;
           }
-          if (leadCellSpan.removeAttribute) leadCellSpan.removeAttribute("title");
-          const { hadDE, hadNL } = stripCountryEmojiFromTextNodes(leadCellSpan);
-          if (!hadDE && !hadNL) continue;
-          const flag = document.createElement("span");
-          flag.className = LEAD_FLAG_CLASS;
-          if (hadDE) {
-            flag.setAttribute("data-flag", "de");
-            flag.setAttribute("aria-label", "Germany");
-            setCopilotTooltip(flag, "Germany");
-          } else {
-            flag.setAttribute("data-flag", "nl");
-            flag.setAttribute("aria-label", "Netherlands");
-            setCopilotTooltip(flag, "Netherlands");
+        }
+      } finally {
+        leadFlagsObserverSuppression = Math.max(0, leadFlagsObserverSuppression - 1);
+      }
+    }
+    function ensureLeadsFlagsObserver(candidateTables) {
+      const tables = candidateTables || findCandidateTables();
+      if (!tables.length) return;
+      const looksRelevant = (value) => {
+        const v = String(value || "");
+        if (!v) return false;
+        if (v.includes("\u{1F1E9}\u{1F1EA}") || v.includes("\u{1F1F3}\u{1F1F1}")) return true;
+        if (/^\s*(DE|NL)\s+/i.test(v)) return true;
+        return false;
+      };
+      for (const table of tables) {
+        if (!table || !table.setAttribute) continue;
+        if (table.getAttribute(LEAD_FLAGS_OBSERVER_ATTR) === "1") continue;
+        if (leadFlagsObserverByTable.has(table)) {
+          table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, "1");
+          continue;
+        }
+        let scheduled2 = false;
+        const mo = new MutationObserver((mutations) => {
+          if (leadFlagsObserverSuppression > 0) return;
+          let relevant = false;
+          for (const m of mutations) {
+            if (!m) continue;
+            if (m.type === "characterData") {
+              try {
+                const data = m.target && typeof m.target.data === "string" ? m.target.data : m.target && m.target.nodeValue;
+                if (looksRelevant(data)) {
+                  relevant = true;
+                  break;
+                }
+              } catch {
+              }
+            }
+            if (m.type === "attributes") {
+              try {
+                const name = String(m.attributeName || "");
+                const val = m.target && m.target.getAttribute ? m.target.getAttribute(name) : null;
+                if (looksRelevant(val)) {
+                  relevant = true;
+                  break;
+                }
+              } catch {
+              }
+            }
+            if (m.type === "childList") {
+              try {
+                const nodes = [];
+                if (m.addedNodes && m.addedNodes.length) nodes.push(...m.addedNodes);
+                if (m.removedNodes && m.removedNodes.length) nodes.push(...m.removedNodes);
+                for (const n of nodes) {
+                  if (!n) continue;
+                  if (n.nodeType === 3 && looksRelevant(n.nodeValue)) {
+                    relevant = true;
+                    break;
+                  }
+                  if (n.nodeType === 1 && looksRelevant(n.textContent)) {
+                    relevant = true;
+                    break;
+                  }
+                }
+                if (relevant) break;
+              } catch {
+              }
+            }
           }
-          leadCellSpan.insertBefore(flag, leadCellSpan.firstChild);
-          leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, "1");
+          if (!relevant) return;
+          if (scheduled2) return;
+          scheduled2 = true;
+          requestAnimationFrame(() => {
+            scheduled2 = false;
+            replaceLeadIdCountryEmojiWithFlags([table]);
+          });
+        });
+        try {
+          mo.observe(table, {
+            subtree: true,
+            childList: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: ["title", "data-original-title", "id"]
+          });
+          leadFlagsObserverByTable.set(table, mo);
+          table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, "1");
+        } catch {
         }
       }
     }
@@ -5565,6 +5850,7 @@ ${inner}}
         const candidateTables = findCandidateTables();
         hideColumnsInDataTables(candidateTables);
         replaceEyeWithOpenButton(candidateTables);
+        ensureLeadsFlagsObserver(candidateTables);
         replaceLeadIdCountryEmojiWithFlags(candidateTables);
         removeLeadIdYearsHoverAndBeautify(candidateTables);
         setupLeadsListLiveStatusUpdates(candidateTables);

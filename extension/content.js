@@ -30,6 +30,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const LEAD_FLAG_CLASS = 'copilot-lead-flag';
   const LEAD_YEARS_FORMATTED_ATTR = 'data-copilot-years-formatted';
 
+  const LEAD_FLAGS_OBSERVER_ATTR = 'data-copilot-lead-flags-observer';
+  const leadFlagsObserverByTable = new WeakMap();
+  let leadFlagsObserverSuppression = 0;
+
   const STATUS_TRACKING_ATTR = 'data-copilot-status-tracking';
   const STATUS_DEBOUNCE_MS = 350;
 
@@ -318,6 +322,25 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         hideCopilotTooltip();
       }
     });
+  }
+
+  function setCopilotTooltip(el, text) {
+    if (!el || !el.setAttribute) return;
+    const t = String(text || '').trim();
+    if (!t) {
+      try {
+        el.removeAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+      } catch {
+      }
+      return;
+    }
+
+    el.setAttribute(COPILOT_TOOLTIP_TEXT_ATTR, t);
+    try {
+      el.setAttribute(COPILOT_TOOLTIP_BOUND_ATTR, '1');
+    } catch {
+    }
+    ensureCopilotTooltipListeners();
   }
 
   function ensureBadPhoneTooltipBubble() {
@@ -2408,12 +2431,124 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const tables = candidateTables || findCandidateTables();
     if (!tables.length) return;
 
-    for (const table of tables) {
-      const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector('tbody');
-      if (!body) continue;
+    leadFlagsObserverSuppression++;
+    try {
 
-      const rows = body.querySelectorAll('tr[role="row"]');
-      for (const row of rows) {
+    // Use inline SVG nodes rather than data-URI CSS images.
+    // Some sites block `data:` images via CSP, which would make the emoji disappear but the flag never show.
+    const createInlineFlagSvg = (code) => {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '12');
+      svg.setAttribute('viewBox', '0 0 18 12');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.style.display = 'block';
+
+      const stripes =
+        code === 'de'
+          ? [
+              { y: 0, fill: '#000' },
+              { y: 4, fill: '#DD0000' },
+              { y: 8, fill: '#FFCE00' },
+            ]
+          : [
+              { y: 0, fill: '#AE1C28' },
+              { y: 4, fill: '#FFF' },
+              { y: 8, fill: '#21468B' },
+            ];
+
+      for (const s of stripes) {
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('width', '18');
+        rect.setAttribute('height', '4');
+        rect.setAttribute('y', String(s.y));
+        rect.setAttribute('fill', s.fill);
+        svg.appendChild(rect);
+      }
+      return svg;
+    };
+
+    const stripLeadingTextMarker = (container) => {
+      // Some systems render the 🇩🇪/🇳🇱 regional indicator pair as plain "DE"/"NL".
+      // Remove only if it appears as a prefix.
+      try {
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        const first = walker.nextNode();
+        if (!first || typeof first.nodeValue !== 'string') return { hadDE: false, hadNL: false };
+        const raw = first.nodeValue;
+        const m = raw.match(/^\s*(DE|NL)\s+/i);
+        if (!m) return { hadDE: false, hadNL: false };
+        const code = String(m[1] || '').toLowerCase();
+        first.nodeValue = raw.replace(/^\s*(DE|NL)\s+/i, '');
+        return { hadDE: code === 'de', hadNL: code === 'nl' };
+      } catch {
+      }
+      return { hadDE: false, hadNL: false };
+    };
+
+    const detectCountryFromAttributes = (node) => {
+      let hadDE = false;
+      let hadNL = false;
+      try {
+        if (!node || !node.attributes) return { hadDE, hadNL };
+        const attrs = Array.from(node.attributes);
+        for (const a of attrs) {
+          const v = String((a && a.value) || '');
+          if (!v) continue;
+          if (v.includes('🇩🇪')) hadDE = true;
+          if (v.includes('🇳🇱')) hadNL = true;
+          if (!hadDE && !hadNL) {
+            // Also handle plain text fallback when emoji becomes letters.
+            if (/(^|[\s>])DE\s+/i.test(v)) hadDE = true;
+            if (/(^|[\s>])NL\s+/i.test(v)) hadNL = true;
+          }
+          if (hadDE || hadNL) break;
+        }
+      } catch {
+      }
+      return { hadDE, hadNL };
+    };
+
+    const trimLeadingWhitespaceText = (container) => {
+      try {
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        const first = walker.nextNode();
+        if (!first || typeof first.nodeValue !== 'string') return;
+        first.nodeValue = first.nodeValue.replace(/^\s+/, '');
+      } catch {
+      }
+    };
+
+    const hasCountryMarkerNow = (container, row) => {
+      try {
+        const text = String((container && container.textContent) || '');
+        if (text.includes('🇩🇪') || text.includes('🇳🇱')) return true;
+        if (/^\s*(DE|NL)\s+/i.test(text)) return true;
+      } catch {
+      }
+
+      // Tooltips sometimes contain the emoji.
+      try {
+        if (container && container.getAttribute) {
+          const t1 = String(container.getAttribute('title') || '');
+          const t2 = String(container.getAttribute('data-original-title') || '');
+          if (t1.includes('🇩🇪') || t1.includes('🇳🇱') || t2.includes('🇩🇪') || t2.includes('🇳🇱')) return true;
+        }
+      } catch {
+      }
+
+      // DataTables sometimes stores original HTML (including emoji) in row attributes.
+      const fromRowAttrs = detectCountryFromAttributes(row);
+      return !!fromRowAttrs.hadDE || !!fromRowAttrs.hadNL;
+    };
+
+      for (const table of tables) {
+        const body = table.tBodies && table.tBodies.length ? table.tBodies[0] : table.querySelector('tbody');
+        if (!body) continue;
+
+        const rows = body.querySelectorAll('tr[role="row"]');
+        for (const row of rows) {
         const leadCellSpan =
           row.querySelector('td.sorting_1 span[title]') ||
           row.querySelector('td.sorting_1 span') ||
@@ -2422,20 +2557,131 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           row.querySelector('td:first-child');
 
         if (!leadCellSpan) continue;
-        if (leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === '1') continue;
-        if (leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`)) {
+
+          // Always dedupe any existing flags first (DataTables redraws can cause reprocessing).
+          try {
+            if (leadCellSpan.querySelectorAll) {
+              const existing = leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`);
+              if (existing && existing.length > 1) {
+                for (let i = 1; i < existing.length; i++) existing[i].remove();
+              }
+            }
+          } catch {
+          }
+
+        // DataTables can redraw and re-insert the marker into an already-processed element.
+        // Only skip if we already have a flag AND there is no marker to remove.
+          const alreadyHasFlag = !!(leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`));
+        const markerStillPresent = hasCountryMarkerNow(leadCellSpan, row);
+        if (alreadyHasFlag && !markerStillPresent) {
           leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
           continue;
         }
 
+        // If we previously marked it done but a marker returned, reprocess.
+        if (leadCellSpan.getAttribute && leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === '1') {
+          if (markerStillPresent) {
+            try {
+              leadCellSpan.removeAttribute(LEAD_FLAG_REPLACED_ATTR);
+            } catch {
+            }
+          } else {
+            continue;
+          }
+        }
+
+        // Detect country emoji either in text nodes OR in tooltip attributes (some tables moved them into title).
+        // DataTables sometimes also stores the original HTML in row attributes (e.g. <tr id="...🇩🇪 221131...">).
+        let hadDE = false;
+        let hadNL = false;
+
+        // 0) Row attribute fallback (must run BEFORE we strip from the visible cell).
+        const fromRowAttrs = detectCountryFromAttributes(row);
+        hadDE = hadDE || !!fromRowAttrs.hadDE;
+        hadNL = hadNL || !!fromRowAttrs.hadNL;
+
+        // 1) Text nodes
+        const fromText = stripCountryEmojiFromTextNodes(leadCellSpan);
+        hadDE = hadDE || !!fromText.hadDE;
+        hadNL = hadNL || !!fromText.hadNL;
+
+        // If we stripped something, remove leftover leading whitespace.
+        if (fromText.hadDE || fromText.hadNL) trimLeadingWhitespaceText(leadCellSpan);
+
+        // 1b) Plain text prefix fallback ("DE" / "NL")
+        if (!hadDE && !hadNL) {
+          const fromPrefix = stripLeadingTextMarker(leadCellSpan);
+          hadDE = hadDE || !!fromPrefix.hadDE;
+          hadNL = hadNL || !!fromPrefix.hadNL;
+          if (fromPrefix.hadDE || fromPrefix.hadNL) trimLeadingWhitespaceText(leadCellSpan);
+        }
+
+        // 2) title / data-original-title on this node or a descendant
+        const findEmojiAttrNode = () => {
+          const candidates = [];
+          candidates.push(leadCellSpan);
+          try {
+            if (leadCellSpan.querySelector) {
+              const d = leadCellSpan.querySelector(
+                '[title*="🇩🇪"],[title*="🇳🇱"],[data-original-title*="🇩🇪"],[data-original-title*="🇳🇱"]'
+              );
+              if (d) candidates.push(d);
+            }
+          } catch {
+          }
+          for (const n of candidates) {
+            if (!n || !n.getAttribute) continue;
+            const t1 = String(n.getAttribute('title') || '');
+            const t2 = String(n.getAttribute('data-original-title') || '');
+            if (t1.includes('🇩🇪') || t1.includes('🇳🇱') || t2.includes('🇩🇪') || t2.includes('🇳🇱')) return n;
+          }
+          return null;
+        };
+
+        const attrNode = findEmojiAttrNode();
+        if (attrNode && attrNode.getAttribute) {
+          const t1 = String(attrNode.getAttribute('title') || '');
+          const t2 = String(attrNode.getAttribute('data-original-title') || '');
+          hadDE = hadDE || t1.includes('🇩🇪') || t2.includes('🇩🇪');
+          hadNL = hadNL || t1.includes('🇳🇱') || t2.includes('🇳🇱');
+
+          // Strip the emoji out of tooltip attributes, then drop title to remove the hover.
+          try {
+            if (t1) attrNode.setAttribute('title', t1.replace(/🇩🇪|🇳🇱/g, ''));
+          } catch {
+          }
+          try {
+            if (t2) attrNode.setAttribute('data-original-title', t2.replace(/🇩🇪|🇳🇱/g, ''));
+          } catch {
+          }
+        }
+
+        if (!hadDE && !hadNL) continue;
+
         // Remove hover tooltip from the lead-id span if present.
         if (leadCellSpan.removeAttribute) leadCellSpan.removeAttribute('title');
 
-        const { hadDE, hadNL } = stripCountryEmojiFromTextNodes(leadCellSpan);
-        if (!hadDE && !hadNL) continue;
+        // If we are reprocessing a row (common with DataTables), remove the existing flag so we never stack them.
+        try {
+          if (leadCellSpan.querySelectorAll) {
+            leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`).forEach((n) => n.remove());
+          }
+        } catch {
+        }
 
         const flag = document.createElement('span');
         flag.className = LEAD_FLAG_CLASS;
+        // Inline styling so the flag is visible even if CSS is not applied for some reason.
+        flag.style.display = 'inline-block';
+        flag.style.width = '18px';
+        flag.style.height = '12px';
+        flag.style.marginRight = '6px';
+        flag.style.verticalAlign = '-2px';
+        flag.style.lineHeight = '0';
+
+        const svg = createInlineFlagSvg(hadDE ? 'de' : 'nl');
+        flag.appendChild(svg);
+
         if (hadDE) {
           flag.setAttribute('data-flag', 'de');
           flag.setAttribute('aria-label', 'Germany');
@@ -2447,6 +2693,106 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         }
         leadCellSpan.insertBefore(flag, leadCellSpan.firstChild);
         leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
+        }
+      }
+    } finally {
+      leadFlagsObserverSuppression = Math.max(0, leadFlagsObserverSuppression - 1);
+    }
+  }
+
+  function ensureLeadsFlagsObserver(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    const looksRelevant = (value) => {
+      const v = String(value || '');
+      if (!v) return false;
+      if (v.includes('🇩🇪') || v.includes('🇳🇱')) return true;
+      if (/^\s*(DE|NL)\s+/i.test(v)) return true;
+      return false;
+    };
+
+    for (const table of tables) {
+      if (!table || !table.setAttribute) continue;
+      if (table.getAttribute(LEAD_FLAGS_OBSERVER_ATTR) === '1') continue;
+      if (leadFlagsObserverByTable.has(table)) {
+        table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, '1');
+        continue;
+      }
+
+      let scheduled = false;
+      const mo = new MutationObserver((mutations) => {
+        if (leadFlagsObserverSuppression > 0) return;
+
+        let relevant = false;
+        for (const m of mutations) {
+          if (!m) continue;
+
+          if (m.type === 'characterData') {
+            try {
+              const data = m.target && typeof m.target.data === 'string' ? m.target.data : m.target && m.target.nodeValue;
+              if (looksRelevant(data)) {
+                relevant = true;
+                break;
+              }
+            } catch {
+            }
+          }
+
+          if (m.type === 'attributes') {
+            try {
+              const name = String(m.attributeName || '');
+              const val = m.target && m.target.getAttribute ? m.target.getAttribute(name) : null;
+              if (looksRelevant(val)) {
+                relevant = true;
+                break;
+              }
+            } catch {
+            }
+          }
+
+          if (m.type === 'childList') {
+            try {
+              const nodes = [];
+              if (m.addedNodes && m.addedNodes.length) nodes.push(...m.addedNodes);
+              if (m.removedNodes && m.removedNodes.length) nodes.push(...m.removedNodes);
+              for (const n of nodes) {
+                if (!n) continue;
+                if (n.nodeType === 3 && looksRelevant(n.nodeValue)) {
+                  relevant = true;
+                  break;
+                }
+                if (n.nodeType === 1 && looksRelevant(n.textContent)) {
+                  relevant = true;
+                  break;
+                }
+              }
+              if (relevant) break;
+            } catch {
+            }
+          }
+        }
+
+        if (!relevant) return;
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          replaceLeadIdCountryEmojiWithFlags([table]);
+        });
+      });
+
+      try {
+        mo.observe(table, {
+          subtree: true,
+          childList: true,
+          characterData: true,
+          attributes: true,
+          attributeFilter: ['title', 'data-original-title', 'id']
+        });
+        leadFlagsObserverByTable.set(table, mo);
+        table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, '1');
+      } catch {
       }
     }
   }
@@ -3748,6 +4094,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       const candidateTables = findCandidateTables();
       hideColumnsInDataTables(candidateTables);
       replaceEyeWithOpenButton(candidateTables);
+      ensureLeadsFlagsObserver(candidateTables);
       replaceLeadIdCountryEmojiWithFlags(candidateTables);
       removeLeadIdYearsHoverAndBeautify(candidateTables);
       setupLeadsListLiveStatusUpdates(candidateTables);
