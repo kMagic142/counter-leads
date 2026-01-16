@@ -4890,15 +4890,20 @@ ${inner}}
     function setupLeadStatusCounting() {
       const root = document.querySelector("#edit-session");
       if (!root) return;
-      if (root.getAttribute(STATUS_TRACKING_ATTR) === "1") return;
       const leadId = extractLeadIdFromPathname();
       if (!leadId) return;
       const statusEl = findStatusDisplayElement(root);
       if (!statusEl) return;
+      if (root.getAttribute(STATUS_TRACKING_ATTR) === "1") return;
       let initialized = false;
       let lastStatus = null;
       let timer = null;
       function getCurrentStatus() {
+        const statusSpan = root.querySelector("span.session-status");
+        if (statusSpan) {
+          const text = extractStatusValueFromText(statusSpan.textContent);
+          if (text) return text;
+        }
         return extractStatusValueFromText(statusEl.textContent);
       }
       function sendStatus(status) {
@@ -4906,7 +4911,7 @@ ${inner}}
         try {
           if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
             chrome.runtime.sendMessage({
-              type: "txe_LEAD_STATUS_CHANGED",
+              type: "COPILOT_LEAD_STATUS_CHANGED",
               leadId: String(leadId),
               status: String(status || ""),
               url: String(window.location.href || ""),
@@ -4938,20 +4943,17 @@ ${inner}}
       initialized = true;
       lastStatus = getCurrentStatus();
       const mo = new MutationObserver(() => scheduleCheck());
-      mo.observe(statusEl, { childList: true, subtree: true, characterData: true });
-      root.addEventListener(
-        "click",
-        (e) => {
-          const t = e.target;
-          if (!t) return;
-          const clickedInStatus = !!(t.closest && (t.closest("#statusDropdown") || t.closest('[aria-labelledby="statusDropdown"]')));
-          if (!clickedInStatus) return;
-          const clickedText = extractStatusValueFromText(t.textContent);
-          sendStatus(clickedText || getCurrentStatus() || "");
-          scheduleCheck();
-        },
-        true
-      );
+      mo.observe(root, { childList: true, subtree: true, characterData: true });
+      const handleClick = (e) => {
+        const t = e.target;
+        if (!t) return;
+        const clickedInStatus = !!(t.closest && (t.closest("#statusDropdown") || t.closest('[aria-labelledby="statusDropdown"]')));
+        if (!clickedInStatus) return;
+        const clickedText = extractStatusValueFromText(t.textContent);
+        sendStatus(clickedText || getCurrentStatus() || "");
+        scheduleCheck();
+      };
+      root.addEventListener("click", handleClick, true);
       root.setAttribute(STATUS_TRACKING_ATTR, "1");
     }
     function extractCreatedDateFromTimeline() {
