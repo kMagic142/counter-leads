@@ -49,7 +49,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   let leadStatusMap = {};
   let leadStatusMapLoadPromise = null;
   const statusColumnIndexCache = new WeakMap();
-  let applyAllRanOnce = false;
+  let stylesAndThemeApplied = false;
   let hostWhitelisted = ALLOWED_HOSTS.has(window.location.hostname);
 
 
@@ -128,8 +128,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     } catch {
     }
 
-    // Keep the cached "load once" promise in sync so theme doesn't revert
-    // when applyAll() re-runs and reuses the first resolved value.
+    
+    
     storedThemeLoadPromise = Promise.resolve(theme);
 
     try {
@@ -172,10 +172,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     wrap.appendChild(btn);
     (document.body || document.documentElement).appendChild(wrap);
 
-    // Initialize label from stored value.
+    
     applyTheme(getStoredTheme());
 
-    // Sync theme across subdomains (storage API is extension-scoped).
+    
     loadStoredThemeOnce().then((v) => {
       if (v === 'dark' || v === 'light') applyTheme(v);
     });
@@ -205,7 +205,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (!text.trim()) return;
 
     const bubble = ensuretxeTooltipBubble();
-    // Keep the tooltip above any page overlays by moving it to the end of <body>.
+    
     try {
       const host = document.body || document.documentElement;
       if (host && bubble.parentElement === host) host.appendChild(bubble);
@@ -214,10 +214,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     bubble.textContent = text;
     bubble.style.display = 'block';
 
-    // Position relative to viewport.
+    
     const rect = el.getBoundingClientRect();
 
-    // Measure after text is set.
+    
     bubble.style.left = '-9999px';
     bubble.style.top = '-9999px';
     const bw = bubble.offsetWidth || 0;
@@ -228,7 +228,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     let left = Math.round(centerX - bw / 2);
     left = Math.max(margin, Math.min(left, window.innerWidth - bw - margin));
 
-    // Prefer above the element, fall back below if needed.
+    
     let top = Math.round(rect.top - bh - margin);
     if (top < margin) top = Math.round(rect.bottom + margin);
     top = Math.max(margin, Math.min(top, window.innerHeight - bh - margin));
@@ -270,8 +270,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       return null;
     };
 
-    // Simple delegated hover: show on enter, hide on leave.
-    // Phones use a dedicated tooltip system; this is for generic tooltips only.
+    
+    
     document.addEventListener(
       'mouseover',
       (e) => {
@@ -391,7 +391,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (bubble.textContent !== text) bubble.textContent = text;
     bubble.style.display = 'block';
 
-    // Position after content is set.
+    
     bubble.style.left = '-9999px';
     bubble.style.top = '-9999px';
     positionBadPhoneTooltipFor(el);
@@ -1949,7 +1949,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       try {
         if (!rule) continue;
 
-        // STYLE_RULE
+        
         if (rule.type === 1) {
           const styleText = rule.style && rule.style.cssText ? String(rule.style.cssText) : '';
           if (!styleText) continue;
@@ -1970,7 +1970,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           continue;
         }
 
-        // MEDIA_RULE
+        
         if (rule.type === 4) {
           const inner = buildLegacyPurpleOverrideCssFromRules(rule.cssRules);
           if (inner && inner.trim()) {
@@ -1980,7 +1980,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           continue;
         }
 
-        // SUPPORTS_RULE
+        
         if (rule.type === 12) {
           const inner = buildLegacyPurpleOverrideCssFromRules(rule.cssRules);
           if (inner && inner.trim()) {
@@ -1998,7 +1998,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function buildLegacyPurpleReplacementCss() {
     let css = '';
 
-    // Inline styles / SVG attributes that hardcode the legacy purple.
+    
     css += `html[${txe_THEME_ATTR}='dark'] [style*="${LEGACY_PURPLE_HEX}" i] { color: var(--txe-purple) !important; }\n`;
     css += `html[${txe_THEME_ATTR}='dark'] [style*="background:${LEGACY_PURPLE_HEX}" i],\n`;
     css += `html[${txe_THEME_ATTR}='dark'] [style*="background-color:${LEGACY_PURPLE_HEX}" i] { background-color: var(--txe-purple) !important; }\n`;
@@ -2008,7 +2008,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     css += `html[${txe_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX}"],\n`;
     css += `html[${txe_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX.toUpperCase()}"] { fill: var(--txe-purple) !important; stroke: var(--txe-purple) !important; }\n`;
 
-    // Same-origin / readable CSSOM rules.
+    
     const sheets = Array.from(document.styleSheets || []);
     for (const sheet of sheets) {
       try {
@@ -2016,7 +2016,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         if (!rules || !rules.length) continue;
         css += buildLegacyPurpleOverrideCssFromRules(rules);
       } catch {
-        // Cross-origin or blocked CSSOM access; ignore.
+        
       }
     }
 
@@ -2077,7 +2077,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function ensureNavbarUserIcon() {
-    // Only apply this tweak in dark mode, since it is part of the dark-theme UX.
+    
     if ((document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
 
     const nav = document.querySelector('nav.navbar-top');
@@ -2098,7 +2098,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       </svg>
     `;
 
-    // Replace the visible username with the icon, but keep the existing dropdown toggle anchor.
+    
     const media = toggle.querySelector('.media');
     if (media) {
       while (media.firstChild) media.removeChild(media.firstChild);
@@ -2139,7 +2139,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const hidden = body.classList.contains('g-sidenav-hidden');
     if (pinned && !hidden) return true;
     if (hidden && !pinned) return false;
-    // Mixed/unknown; do not persist.
+    
     return null;
   }
 
@@ -2199,14 +2199,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       if (!document.body) return;
       if (!document.getElementById('sidenav-main')) return;
 
-      // Only adjust if we can confidently determine current state.
+      
       const current = computeSidenavPinnedFromBody();
       if (current === pref) return;
       if (pref) pinSidenavFallback();
       else unpinSidenavFallback();
     };
 
-    // Apply persisted state once body/layout exists.
+    
     setTimeout(applyPersisted, 0);
     window.addEventListener('load', applyPersisted, { once: true });
 
@@ -2220,7 +2220,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       const before = document.body ? document.body.className : '';
       setTimeout(() => {
         const after = document.body ? document.body.className : '';
-        // If Argon's handler ran, do nothing.
+        
         if (after === before) {
           if (action === 'sidenav-pin') pinSidenavFallback();
           if (action === 'sidenav-unpin') unpinSidenavFallback();
@@ -2264,21 +2264,21 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   function isDarkColor(rgb) {
     if (!rgb) return false;
-    // Relative luminance (simple approximation).
+    
     const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
     return luminance < 0.35;
   }
 
   function ensureWhiteBrandLogo() {
-    // Simple, fast CSS-based approach: use filter inversion instead of fetching SVG
+    
     if ((document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
 
     const img = document.querySelector('img.navbar-brand-img');
     if (!img) return;
     if (img.getAttribute('data-txe-logo-fast') === '1') return;
 
-    // Apply CSS filter for instant dark mode logo inversion
-    // brightness(0) makes it black, invert(1) makes it white
+    
+    
     img.style.filter = 'brightness(0) invert(1)';
     img.setAttribute('data-txe-logo-fast', '1');
   }
@@ -2320,12 +2320,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     let t = ws(raw);
     if (!t) return t;
 
-    // Strip surrounding brackets for array-like values: [2024,2025] -> 2024,2025
+    
     if (t.startsWith('[') && t.endsWith(']')) {
       t = ws(t.slice(1, -1));
     }
 
-    // Normalize spacing after separators.
+    
     t = t.replace(/\s*,\s*/g, ', ');
     t = t.replace(/\s*:\s*/g, ': ');
     return t;
@@ -2341,23 +2341,23 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
       const rows = body.querySelectorAll('tr[role="row"]');
       for (const row of rows) {
-        // 1) Lead ID cell hover tooltip: remove title and beautify if present
+        
         const leadSpan = row.querySelector('td.sorting_1 span[title]');
         if (leadSpan && leadSpan.getAttribute(LEAD_YEARS_FORMATTED_ATTR) !== '1') {
           const title = leadSpan.getAttribute('title');
           if (title) {
-            // If someone later re-adds it, keep it pretty.
+            
             const pretty = beautifyArrayLikeText(title);
-            // Remove hover tooltip entirely.
+            
             leadSpan.removeAttribute('title');
-            // Store pretty value in case you want it later (no hover).
+            
             leadSpan.setAttribute('data-txe-years', pretty);
           }
           leadSpan.setAttribute(LEAD_YEARS_FORMATTED_ATTR, '1');
         }
 
-        // 2) Beautify the separate years column cell (usually contains [2024,2025])
-        // Only touch simple text-only cells to avoid breaking nested markup.
+        
+        
         const cells = row.querySelectorAll('td');
         for (const cell of cells) {
           if (cell.getAttribute(LEAD_YEARS_FORMATTED_ATTR) === '1') continue;
@@ -2386,8 +2386,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     leadFlagsObserverSuppression++;
     try {
 
-    // Use inline SVG nodes rather than data-URI CSS images.
-    // Some sites block `data:` images via CSP, which would make the emoji disappear but the flag never show.
+    
+    
     const createInlineFlagSvg = (code) => {
       const svgNS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(svgNS, 'svg');
@@ -2422,8 +2422,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     };
 
     const stripLeadingTextMarker = (container) => {
-      // Some systems render the 🇩🇪/🇳🇱 regional indicator pair as plain "DE"/"NL".
-      // Remove only if it appears as a prefix.
+      
+      
       try {
         const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
         const first = walker.nextNode();
@@ -2451,7 +2451,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           if (v.includes('🇩🇪')) hadDE = true;
           if (v.includes('🇳🇱')) hadNL = true;
           if (!hadDE && !hadNL) {
-            // Also handle plain text fallback when emoji becomes letters.
+            
             if (/(^|[\s>])DE\s+/i.test(v)) hadDE = true;
             if (/(^|[\s>])NL\s+/i.test(v)) hadNL = true;
           }
@@ -2480,7 +2480,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       } catch {
       }
 
-      // Tooltips sometimes contain the emoji.
+      
       try {
         if (container && container.getAttribute) {
           const t1 = String(container.getAttribute('title') || '');
@@ -2490,7 +2490,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       } catch {
       }
 
-      // DataTables sometimes stores original HTML (including emoji) in row attributes.
+      
       const fromRowAttrs = detectCountryFromAttributes(row);
       return !!fromRowAttrs.hadDE || !!fromRowAttrs.hadNL;
     };
@@ -2510,7 +2510,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
         if (!leadCellSpan) continue;
 
-          // Always dedupe any existing flags first (DataTables redraws can cause reprocessing).
+          
           try {
             if (leadCellSpan.querySelectorAll) {
               const existing = leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`);
@@ -2521,8 +2521,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           } catch {
           }
 
-        // DataTables can redraw and re-insert the marker into an already-processed element.
-        // Only skip if we already have a flag AND there is no marker to remove.
+        
+        
           const alreadyHasFlag = !!(leadCellSpan.querySelector && leadCellSpan.querySelector(`.${LEAD_FLAG_CLASS}`));
         const markerStillPresent = hasCountryMarkerNow(leadCellSpan, row);
         if (alreadyHasFlag && !markerStillPresent) {
@@ -2530,7 +2530,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           continue;
         }
 
-        // If we previously marked it done but a marker returned, reprocess.
+        
         if (leadCellSpan.getAttribute && leadCellSpan.getAttribute(LEAD_FLAG_REPLACED_ATTR) === '1') {
           if (markerStillPresent) {
             try {
@@ -2542,25 +2542,25 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           }
         }
 
-        // Detect country emoji either in text nodes OR in tooltip attributes (some tables moved them into title).
-        // DataTables sometimes also stores the original HTML in row attributes (e.g. <tr id="...🇩🇪 221131...">).
+        
+        
         let hadDE = false;
         let hadNL = false;
 
-        // 0) Row attribute fallback (must run BEFORE we strip from the visible cell).
+        
         const fromRowAttrs = detectCountryFromAttributes(row);
         hadDE = hadDE || !!fromRowAttrs.hadDE;
         hadNL = hadNL || !!fromRowAttrs.hadNL;
 
-        // 1) Text nodes
+        
         const fromText = stripCountryEmojiFromTextNodes(leadCellSpan);
         hadDE = hadDE || !!fromText.hadDE;
         hadNL = hadNL || !!fromText.hadNL;
 
-        // If we stripped something, remove leftover leading whitespace.
+        
         if (fromText.hadDE || fromText.hadNL) trimLeadingWhitespaceText(leadCellSpan);
 
-        // 1b) Plain text prefix fallback ("DE" / "NL")
+        
         if (!hadDE && !hadNL) {
           const fromPrefix = stripLeadingTextMarker(leadCellSpan);
           hadDE = hadDE || !!fromPrefix.hadDE;
@@ -2568,7 +2568,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           if (fromPrefix.hadDE || fromPrefix.hadNL) trimLeadingWhitespaceText(leadCellSpan);
         }
 
-        // 2) title / data-original-title on this node or a descendant
+        
         const findEmojiAttrNode = () => {
           const candidates = [];
           candidates.push(leadCellSpan);
@@ -2597,7 +2597,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           hadDE = hadDE || t1.includes('🇩🇪') || t2.includes('🇩🇪');
           hadNL = hadNL || t1.includes('🇳🇱') || t2.includes('🇳🇱');
 
-          // Strip the emoji out of tooltip attributes, then drop title to remove the hover.
+          
           try {
             if (t1) attrNode.setAttribute('title', t1.replace(/🇩🇪|🇳🇱/g, ''));
           } catch {
@@ -2610,10 +2610,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
         if (!hadDE && !hadNL) continue;
 
-        // Remove hover tooltip from the lead-id span if present.
+        
         if (leadCellSpan.removeAttribute) leadCellSpan.removeAttribute('title');
 
-        // If we are reprocessing a row (common with DataTables), remove the existing flag so we never stack them.
+        
         try {
           if (leadCellSpan.querySelectorAll) {
             leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`).forEach((n) => n.remove());
@@ -2623,7 +2623,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
         const flag = document.createElement('span');
         flag.className = LEAD_FLAG_CLASS;
-        // Inline styling so the flag is visible even if CSS is not applied for some reason.
+        
         flag.style.display = 'inline-block';
         flag.style.width = '18px';
         flag.style.height = '12px';
@@ -2777,7 +2777,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       } catch {
       }
 
-      // Fallback (best-effort) if chrome.storage is unavailable.
+      
       try {
         const raw = localStorage.getItem(OPENED_LEADS_STORAGE_KEY);
         const arr = raw ? JSON.parse(raw) : [];
@@ -2889,7 +2889,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       if (t.startsWith('status:') || t.includes(' status:')) return el;
     }
 
-    // Fallback: sometimes the dropdown itself shows the selected value.
+    
     const dropdown = root.querySelector('#statusDropdown');
     if (dropdown) return dropdown;
 
@@ -2963,14 +2963,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       }, STATUS_DEBOUNCE_MS);
     }
 
-    // Initial baseline
+    
     initialized = true;
     lastStatus = getCurrentStatus();
 
     const mo = new MutationObserver(() => scheduleCheck());
     mo.observe(statusEl, { childList: true, subtree: true, characterData: true });
 
-    // Click fallback (covers cases where the status element updates after a request)
+    
     root.addEventListener(
       'click',
       (e) => {
@@ -2982,11 +2982,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         );
         if (!clickedInStatus) return;
 
-        // Send immediately on menu click (server dedupes by leadId).
+        
         const clickedText = extractStatusValueFromText(t.textContent);
         sendStatus(clickedText || getCurrentStatus() || '');
 
-        // Also re-check after a short delay in case UI updates async.
+        
         scheduleCheck();
       },
       true
@@ -3006,8 +3006,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const body = timelineCard.querySelector(':scope > .card-body') || timelineCard.querySelector('.card-body');
     if (!body) return null;
 
-    // The first timeline element contains the created timestamp in:
-    // <div class="timeline-content"> ... <small class="text-muted font-weight-bold">TIMESTAMP</small>
+    
+    
     const createdSmall = body.querySelector('.timeline-content small.text-muted.font-weight-bold');
     if (createdSmall) {
       const v = ws(createdSmall.textContent);
@@ -3025,18 +3025,18 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const rawText = ws(container.textContent);
     if (!rawText) return null;
 
-    // Common timestamp patterns seen in the UI
+    
     const patterns = [
-      /\b\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, // 16.12.2025 12:29(:56)
-      /\b\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, // 2025-12-16 12:29(:56)
-      /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?\b/ // 2025-12-16T12:29(:56)
+      /\b\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, 
+      /\b\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}(?::\d{2})?\b/, 
+      /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?\b/ 
     ];
     for (const re of patterns) {
       const m = rawText.match(re);
       if (m) return m[0];
     }
 
-    // Fallback: return the container text minus obvious labels
+    
     const cleaned = ws(rawText.replace(/\b(created|created at|lead created)\b\s*:?/gi, ''));
     return cleaned || null;
   }
@@ -3048,7 +3048,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const created = extractCreatedDateFromTimeline();
     if (!created) return;
 
-    // Primary: header-body -> first row -> <h6 class="h2 d-inline-block mb-0">Lead</h6>
+    
     const headerBody = document.querySelector('.header-body');
     if (headerBody) {
       const firstHeaderRow = headerBody.querySelector('.row.align-items-center.py-4');
@@ -3056,17 +3056,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         const h6Candidates = Array.from(firstHeaderRow.querySelectorAll('h6.h2'));
         const leadH6 = h6Candidates.find((h6) => ws(h6.textContent).toLowerCase() === 'lead') || firstHeaderRow.querySelector('h6.h2');
         if (leadH6) {
-          // Make the immediate container a flex row so we can push the created date to the right.
+          
           const container = leadH6.parentElement;
           if (container) container.classList.add(LEAD_HEADER_TITLE_CLASS);
 
-          // Create a separate <h6> element for the created date (not appended into the existing Lead <h6>).
+          
           if (container && container.getAttribute(CREATED_DATE_RENDERED_ATTR) !== '1') {
             const createdH6 = document.createElement('h6');
             createdH6.className = `h2 d-inline-block mb-0 ${CREATED_DATE_CLASS}`;
             createdH6.textContent = created;
 
-            // Insert right after the Lead title.
+            
             container.insertBefore(createdH6, leadH6.nextSibling);
             container.setAttribute(CREATED_DATE_RENDERED_ATTR, '1');
           }
@@ -3075,7 +3075,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       }
     }
 
-    // Fallback: attach to "Lead" / "Comments" card header inside #edit-session
+    
     const leadHeader = Array.from(root.querySelectorAll('.card .card-header h3, .card-header h3')).find((h3) => {
       return ws(h3.textContent).toLowerCase() === 'lead';
     });
@@ -3192,13 +3192,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       btn.type = 'button';
       btn.textContent = 'Open';
 
-      // Keep the page's existing behavior (runs in page context).
+      
       const onkeydown = link.getAttribute('onkeydown');
       if (onkeydown) btn.setAttribute('onkeydown', onkeydown);
       const originalOnclick = link.getAttribute('onclick');
       if (originalOnclick) btn.setAttribute('onclick', originalOnclick);
 
-      // Fallback: if inline handler isn't present for some reason, forward the click.
+      
       btn.addEventListener('click', () => {
         try {
           link.click();
@@ -3216,7 +3216,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const table = document.querySelector('table#precalcs-table');
     const sidebar = document.querySelector('#precalc-info-rightSidebar');
     if (sidebar) {
-      // The site sets an inline background with '!important', so we must override inline.
+      
       try {
         sidebar.style.setProperty('background', 'var(--txe-surface)', 'important');
       } catch {
@@ -3372,49 +3372,49 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     return { original, cleaned: s, digitsOnly };
   }
 
-  // Keep suggestions Europe-focused (plus a few explicitly allowed exceptions).
-  // Ordered by most common in our leads, then broader Europe.
+  
+  
   const COMMON_CALLING_CODES = [
-    // Most common for this dashboard
-    '40', // Romania
-    '49', // Germany
-    '31', // Netherlands
+    
+    '40', 
+    '49', 
+    '31', 
 
-    // Nearby / common Europe
-    '33', // France
-    '39', // Italy
-    '34', // Spain
-    '44', // United Kingdom
-    '41', // Switzerland
-    '43', // Austria
-    '32', // Belgium
-    '45', // Denmark
-    '46', // Sweden
-    '47', // Norway
-    '48', // Poland
-    '30', // Greece
-    '351', // Portugal
-    '353', // Ireland
-    '352', // Luxembourg
-    '36', // Hungary
-    '359', // Bulgaria
-    '420', // Czechia
-    '421', // Slovakia
-    '385', // Croatia
-    '386', // Slovenia
-    '381', // Serbia
-    '387', // Bosnia and Herzegovina
-    '382', // Montenegro
-    '389', // North Macedonia
-    '355', // Albania
-    '90', // Turkey
+    
+    '33', 
+    '39', 
+    '34', 
+    '44', 
+    '41', 
+    '43', 
+    '32', 
+    '45', 
+    '46', 
+    '47', 
+    '48', 
+    '30', 
+    '351', 
+    '353', 
+    '352', 
+    '36', 
+    '359', 
+    '420', 
+    '421', 
+    '385', 
+    '386', 
+    '381', 
+    '387', 
+    '382', 
+    '389', 
+    '355', 
+    '90', 
 
-    // Rare cases (explicitly allowed)
-    '373', // Moldova
-    '7', // Russia
-    '61', // Australia
-    '64', // New Zealand
-    '358', // Finland
+    
+    '373', 
+    '7', 
+    '61', 
+    '64', 
+    '358', 
   ];
 
   function makeSuggestion(candidateE164) {
@@ -3449,12 +3449,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       suggestions.push(s);
     };
 
-    // Fix common mistake: trunk '0' included after +CC.
+    
     if (national.startsWith('0')) {
       tryAdd(`+${callingCode}${national.replace(/^0+/, '')}`);
     }
 
-    // If the national part doesn't fit this calling code, try swapping the calling code.
+    
     for (const cc of COMMON_CALLING_CODES) {
       if (cc === callingCode) continue;
       tryAdd(`+${cc}${national}`);
@@ -3501,13 +3501,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
             );
           }
 
-          // If isPossible is true but isValid is false, this is often a wrong prefix for the national digits.
+          
           if (!parsed.isValid()) {
             errors.push(`Wrong prefix: +${cc} doesn't match these digits`);
             suggestions.push(...getPrefixSuggestions(parsed));
           }
 
-          // If the calling code doesn't resolve to a single country (e.g. +7), it can be ambiguous.
+          
           if (!parsed.country) {
             errors.push(`Prefix +${cc} is ambiguous/unknown (can't determine a single country)`);
             suggestions.push(...getPrefixSuggestions(parsed));
@@ -3524,7 +3524,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function setPhoneDecoration(el, validation) {
     if (!el) return;
 
-    // Prefer decorating the actual interactive element (so hover hits the tooltip target).
+    
     const target = (() => {
       if (!el || !el.querySelector) return el;
       if (el.tagName && String(el.tagName).toLowerCase() === 'input') return el;
@@ -3534,7 +3534,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       );
     })();
 
-    // Phones use a dedicated tooltip system (not the generic one) to avoid flicker.
+    
     target.classList.remove('border', 'border-danger', 'rounded', 'px-1', 'txe-bad-phone');
     try {
       target.removeAttribute(txe_BAD_PHONE_TOOLTIP_TEXT_ATTR);
@@ -3670,18 +3670,18 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function addCountryRow() {
-    // Find and enhance the native country element
+    
     const nativeCountrySpan = document.querySelector('#sessionObject_session_status, #edit-session span.session-status');
     if (!nativeCountrySpan) return;
 
     const text = String(nativeCountrySpan.textContent || '');
     if (!/country:/i.test(text)) return;
 
-    // Mark as processed to avoid re-running
+    
     if (nativeCountrySpan.getAttribute('data-txe-country-enhanced') === '1') return;
     nativeCountrySpan.setAttribute('data-txe-country-enhanced', '1');
 
-    // Replace DE with Germany, NL with Netherlands
+    
     let enhanced = text;
     enhanced = enhanced.replace(/\bDE\b/g, 'Germany');
     enhanced = enhanced.replace(/\bNL\b/g, 'Netherlands');
@@ -3903,7 +3903,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
             }
           }
 
-          // Fallback: if we can't identify the changed lead, re-apply to visible rows.
+          
           applyKnownStatusesToVisibleRows();
         });
       }
@@ -3918,14 +3918,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (!tables.length) return;
 
     for (const table of tables) {
-      // Find native "Open" buttons/links added by the dashboard
+      
       const tds = table.querySelectorAll(`tbody td.text-center:not([${OPEN_BUTTON_REPLACED_ATTR}="1"])`);
       for (const td of tds) {
-        // Look for the native Open button (could be <a> or <button>)
+        
         const btn = td.querySelector('a[href*="/leads/"].btn, button[onclick*="leads"]');
         if (!btn) continue;
 
-        // Extract href from <a> or onclick from <button>
+        
         let href = btn.getAttribute('href');
         if (!href) {
           const onclick = btn.getAttribute('onclick') || '';
@@ -3937,16 +3937,16 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         const leadId = extractLeadIdFromHref(href);
         if (!leadId) continue;
 
-        // Mark and enhance the native button
+        
         btn.setAttribute(OPEN_BTN_ATTR, '1');
         btn.setAttribute(OPEN_BTN_LEAD_ID_ATTR, leadId);
 
-        // Apply "Opened" styling if already opened
+        
         if (openedLeadIds.has(String(leadId))) {
           setOpenedButtonUI(btn);
         }
 
-        // Intercept click to track opened state and force new tab
+        
         const originalHref = href;
         btn.addEventListener(
           'click',
@@ -3965,37 +3965,27 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function applyAll() {
-    // Fast path: bail early if hostname not whitelisted
     if (!hostWhitelisted) return;
-    
-    // Prevent multiple runs on same page
-    if (applyAllRanOnce) return;
-    applyAllRanOnce = true;
 
-    // Inject styles FIRST before other operations (prevents FOUC and layout thrashing)
-    ensureStyles();
-    
-    // Load and apply theme synchronously to prevent flashing
-    const storedTheme = getStoredTheme();
-    applyTheme(storedTheme);
-    
-    // Load from chrome.storage in background (non-blocking) to sync across tabs
-    loadStoredThemeOnce().then((v) => {
-      if (v === 'dark' || v === 'light') applyTheme(v);
-    });
-    
-    // Apply other common enhancements
-    ensureLegacyPurpleReplacements();
-    ensureThemeToggle();
-    ensureWhiteBrandLogo();
-    ensureNavbarUserIcon();
-    ensureSidenavToggleFallback();
+    if (!stylesAndThemeApplied) {
+      stylesAndThemeApplied = true;
+      ensureStyles();
+      const storedTheme = getStoredTheme();
+      applyTheme(storedTheme);
+      loadStoredThemeOnce().then((v) => {
+        if (v === 'dark' || v === 'light') applyTheme(v);
+      });
+      ensureLegacyPurpleReplacements();
+      ensureThemeToggle();
+      ensureWhiteBrandLogo();
+      ensureNavbarUserIcon();
+      ensureSidenavToggleFallback();
+    }
 
     if (isPrecalcsListPage()) {
       applyPrecalcsEnhancements();
     }
 
-    // Everything below is leads-only behavior.
     if (!isLeadsArea()) return;
 
     if (isLeadsListPage()) {
@@ -4010,7 +4000,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     }
 
     if (isLeadDetailsPage()) {
-      // Visiting the details page counts as "opened".
       loadOpenedLeadIdsOnce();
       const leadId = extractLeadIdFromPathname();
       if (leadId) markLeadAsOpened(leadId);

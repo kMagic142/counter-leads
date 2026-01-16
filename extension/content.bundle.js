@@ -2259,8 +2259,6 @@
     const ALLOWED_HOSTS = /* @__PURE__ */ new Set(["dashboard.taxe.ro", "taxe.amdav.ro"]);
     const HIDDEN_COL_CLASS = "txe-hidden-dt-col";
     const OPEN_BUTTON_REPLACED_ATTR = "data-txe-open-replaced";
-    const STYLE_ID = "new-taxe-leads-tweaks-style";
-    const COUNTRY_ROW_CLASS = "txe-lead-country-row";
     const DETAILS_PAIRED_ATTR = "data-txe-details-paired";
     const DETAIL_ROW_CLASS = "txe-detail-row";
     const DETAIL_LABEL_CLASS = "txe-detail-label";
@@ -2296,7 +2294,7 @@
     let leadStatusMap = {};
     let leadStatusMapLoadPromise = null;
     const statusColumnIndexCache = /* @__PURE__ */ new WeakMap();
-    let applyAllRanOnce = false;
+    let stylesAndThemeApplied = false;
     let hostWhitelisted = ALLOWED_HOSTS.has(window.location.hostname);
     function ws(s) {
       return String(s || "").replace(/\s+/g, " ").trim();
@@ -4978,11 +4976,8 @@ ${inner}}
       if (!rawText) return null;
       const patterns = [
         /\b\d{1,2}\.\d{1,2}\.\d{4}\s+\d{1,2}:\d{2}(?::\d{2})?\b/,
-        // 16.12.2025 12:29(:56)
         /\b\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}(?::\d{2})?\b/,
-        // 2025-12-16 12:29(:56)
         /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?\b/
-        // 2025-12-16T12:29(:56)
       ];
       for (const re of patterns) {
         const m = rawText.match(re);
@@ -5239,79 +5234,41 @@ ${inner}}
       return { original, cleaned: s, digitsOnly };
     }
     const COMMON_CALLING_CODES = [
-      // Most common for this dashboard
       "40",
-      // Romania
       "49",
-      // Germany
       "31",
-      // Netherlands
-      // Nearby / common Europe
       "33",
-      // France
       "39",
-      // Italy
       "34",
-      // Spain
       "44",
-      // United Kingdom
       "41",
-      // Switzerland
       "43",
-      // Austria
       "32",
-      // Belgium
       "45",
-      // Denmark
       "46",
-      // Sweden
       "47",
-      // Norway
       "48",
-      // Poland
       "30",
-      // Greece
       "351",
-      // Portugal
       "353",
-      // Ireland
       "352",
-      // Luxembourg
       "36",
-      // Hungary
       "359",
-      // Bulgaria
       "420",
-      // Czechia
       "421",
-      // Slovakia
       "385",
-      // Croatia
       "386",
-      // Slovenia
       "381",
-      // Serbia
       "387",
-      // Bosnia and Herzegovina
       "382",
-      // Montenegro
       "389",
-      // North Macedonia
       "355",
-      // Albania
       "90",
-      // Turkey
-      // Rare cases (explicitly allowed)
       "373",
-      // Moldova
       "7",
-      // Russia
       "61",
-      // Australia
       "64",
-      // New Zealand
       "358"
-      // Finland
     ];
     function makeSuggestion(candidateE164) {
       try {
@@ -5743,19 +5700,20 @@ ${inner}}
     }
     function applyAll() {
       if (!hostWhitelisted) return;
-      if (applyAllRanOnce) return;
-      applyAllRanOnce = true;
-      ensureStyles();
-      const storedTheme = getStoredTheme();
-      applyTheme(storedTheme);
-      loadStoredThemeOnce().then((v) => {
-        if (v === "dark" || v === "light") applyTheme(v);
-      });
-      ensureLegacyPurpleReplacements();
-      ensureThemeToggle();
-      ensureWhiteBrandLogo();
-      ensureNavbarUserIcon();
-      ensureSidenavToggleFallback();
+      if (!stylesAndThemeApplied) {
+        stylesAndThemeApplied = true;
+        ensureStyles();
+        const storedTheme = getStoredTheme();
+        applyTheme(storedTheme);
+        loadStoredThemeOnce().then((v) => {
+          if (v === "dark" || v === "light") applyTheme(v);
+        });
+        ensureLegacyPurpleReplacements();
+        ensureThemeToggle();
+        ensureWhiteBrandLogo();
+        ensureNavbarUserIcon();
+        ensureSidenavToggleFallback();
+      }
       if (isPrecalcsListPage()) {
         applyPrecalcsEnhancements();
       }
