@@ -6,8 +6,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   const HIDDEN_COL_CLASS = 'txe-hidden-dt-col';
   const OPEN_BUTTON_REPLACED_ATTR = 'data-txe-open-replaced';
-  const STYLE_ID = 'new-taxe-leads-tweaks-style';
-  const COUNTRY_ROW_CLASS = 'txe-lead-country-row';
   const DETAILS_PAIRED_ATTR = 'data-txe-details-paired';
   const DETAIL_ROW_CLASS = 'txe-detail-row';
   const DETAIL_LABEL_CLASS = 'txe-detail-label';
@@ -51,6 +49,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   let leadStatusMap = {};
   let leadStatusMapLoadPromise = null;
   const statusColumnIndexCache = new WeakMap();
+  let applyAllRanOnce = false;
+  let hostWhitelisted = ALLOWED_HOSTS.has(window.location.hostname);
 
 
 
@@ -2269,78 +2269,18 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     return luminance < 0.35;
   }
 
-  async function ensureWhiteBrandLogo() {
+  function ensureWhiteBrandLogo() {
+    // Simple, fast CSS-based approach: use filter inversion instead of fetching SVG
     if ((document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
 
     const img = document.querySelector('img.navbar-brand-img');
     if (!img) return;
-    if (img.getAttribute('data-txe-logo') === '1') return;
+    if (img.getAttribute('data-txe-logo-fast') === '1') return;
 
-    const src = img.currentSrc || img.src;
-    if (!src || !/logo-taxe\.svg/i.test(src)) return;
-
-    const fetchTextViaBackground = (url) => {
-      return new Promise((resolve, reject) => {
-        try {
-          if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
-            reject(new Error('Extension messaging unavailable'));
-            return;
-          }
-
-          chrome.runtime.sendMessage({ type: 'txe_FETCH_TEXT', url }, (resp) => {
-            const err = chrome.runtime.lastError;
-            if (err) {
-              reject(new Error(String(err.message || err)));
-              return;
-            }
-            if (!resp || resp.ok !== true || typeof resp.text !== 'string') {
-              reject(new Error(String((resp && resp.error) || 'Fetch failed')));
-              return;
-            }
-            resolve(resp.text);
-          });
-        } catch (e) {
-          reject(e);
-        }
-      });
-    };
-
-    try {
-      // Fetch through the extension service worker to avoid page CORS.
-      const svgText = await fetchTextViaBackground(src);
-      if (!svgText || !svgText.includes('<svg')) throw new Error('Logo is not SVG');
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(svgText, 'image/svg+xml');
-      const svg = doc.documentElement;
-
-      // Replace only dark fills (logo text is typically dark); preserve non-dark colors (e.g. green X).
-      const filled = svg.querySelectorAll('[fill]');
-      for (const el of filled) {
-        const fill = el.getAttribute('fill');
-        const rgb = parseCssColorToRgb(fill);
-        if (rgb && isDarkColor(rgb)) el.setAttribute('fill', '#ffffff');
-      }
-
-      const styled = svg.querySelectorAll('[style]');
-      for (const el of styled) {
-        const style = el.getAttribute('style') || '';
-        const m = style.match(/fill\s*:\s*([^;]+)\s*;?/i);
-        if (!m) continue;
-        const rgb = parseCssColorToRgb(m[1]);
-        if (!rgb || !isDarkColor(rgb)) continue;
-        el.setAttribute('style', style.replace(/fill\s*:\s*([^;]+)\s*;?/i, 'fill: #ffffff;'));
-      }
-
-      const serialized = new XMLSerializer().serializeToString(svg);
-      const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
-      img.src = dataUri;
-      img.setAttribute('data-txe-logo', '1');
-    } catch (e) {
-      // Fallback: at least make it visible in dark mode.
-      img.style.filter = 'brightness(0) invert(1)';
-      img.setAttribute('data-txe-logo', '1');
-    }
+    // Apply CSS filter for instant dark mode logo inversion
+    // brightness(0) makes it black, invert(1) makes it white
+    img.style.filter = 'brightness(0) invert(1)';
+    img.setAttribute('data-txe-logo-fast', '1');
   }
 
   function stripCountryEmojiFromTextNodes(el) {
@@ -3055,41 +2995,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     root.setAttribute(STATUS_TRACKING_ATTR, '1');
   }
 
-  function findDetailValueByLabel(labelIncludes) {
-    const root = document.querySelector('#edit-session');
-    if (!root) return null;
-
-    const normIncludes = (s) => {
-      const t = ws(s).toLowerCase();
-      return labelIncludes.some((needle) => t.includes(String(needle).toLowerCase()));
-    };
-
-    // Preferred: paired layout rows
-    const pairedRows = Array.from(root.querySelectorAll(`.${DETAIL_ROW_CLASS}`));
-    for (const row of pairedRows) {
-      const labelEl = row.querySelector(`.${DETAIL_LABEL_CLASS}`);
-      const valueEl = row.querySelector(`.${DETAIL_VALUE_CLASS}`);
-      if (!labelEl || !valueEl) continue;
-      if (!normIncludes(labelEl.textContent)) continue;
-      const v = ws(valueEl.textContent);
-      if (v) return v;
-    }
-
-    // Fallback: original label/value columns
-    const labelsCol = root.querySelector('.session-details');
-    const valuesCol = root.querySelector('.session-details-values');
-    if (labelsCol && valuesCol) {
-      const labelRows = Array.from(labelsCol.querySelectorAll(':scope > div'));
-      const valueRows = Array.from(valuesCol.querySelectorAll(':scope > div'));
-      const idx = labelRows.findIndex((d) => normIncludes(d.textContent));
-      if (idx >= 0 && idx < valueRows.length) {
-        const v = ws(valueRows[idx].textContent);
-        if (v) return v;
-      }
-    }
-
-    return null;
-  }
 
   function extractCreatedDateFromTimeline() {
     const root = document.querySelector('#edit-session');
@@ -3335,21 +3240,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     replacePrecalcsEyeWithOpenButton();
   }
 
-  function detectCountry() {
-    const container = document.querySelector('#edit-session') || document.documentElement;
-    const text = container ? container.textContent || '' : '';
-
-    if (/"country_form"\s*:\s*"NL"/i.test(text)) return 'Netherlands';
-    if (/"country_form"\s*:\s*"DE"/i.test(text)) return 'Germany';
-
-    if (/newClientNL/i.test(text)) return 'Netherlands';
-    if (/newClientDE/i.test(text)) return 'Germany';
-
-    if (/\bOlanda\b/i.test(text) || text.includes('🇳🇱')) return 'Netherlands';
-    if (/\bGermania\b/i.test(text) || text.includes('🇩🇪')) return 'Germany';
-
-    return null;
-  }
 
   function ensureStatusLabel() {
     const el = document.querySelector('#edit-session #statusDropdown');
@@ -3517,7 +3407,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     '382', // Montenegro
     '389', // North Macedonia
     '355', // Albania
-    '90', // Turkey (partly in Europe)
+    '90', // Turkey
 
     // Rare cases (explicitly allowed)
     '373', // Moldova
@@ -3574,7 +3464,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       }
     }
 
-    // Keep it small to avoid noisy tooltips.
     return suggestions.slice(0, 2);
   }
 
@@ -4076,13 +3965,27 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function applyAll() {
-    if (!ALLOWED_HOSTS.has(window.location.hostname)) return;
+    // Fast path: bail early if hostname not whitelisted
+    if (!hostWhitelisted) return;
+    
+    // Prevent multiple runs on same page
+    if (applyAllRanOnce) return;
+    applyAllRanOnce = true;
+
+    // Inject styles FIRST before other operations (prevents FOUC and layout thrashing)
+    ensureStyles();
+    
+    // Load and apply theme synchronously to prevent flashing
+    const storedTheme = getStoredTheme();
+    applyTheme(storedTheme);
+    
+    // Load from chrome.storage in background (non-blocking) to sync across tabs
     loadStoredThemeOnce().then((v) => {
       if (v === 'dark' || v === 'light') applyTheme(v);
     });
-    ensureStyles();
+    
+    // Apply other common enhancements
     ensureLegacyPurpleReplacements();
-    applyTheme(getStoredTheme());
     ensureThemeToggle();
     ensureWhiteBrandLogo();
     ensureNavbarUserIcon();
