@@ -4,46 +4,46 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const TARGET_TITLE = 'Taxe Dashboard | Leads';
   const ALLOWED_HOSTS = new Set(['dashboard.taxe.ro', 'taxe.amdav.ro']);
 
-  const HIDDEN_COL_CLASS = 'copilot-hidden-dt-col';
-  const OPEN_BUTTON_REPLACED_ATTR = 'data-copilot-open-replaced';
+  const HIDDEN_COL_CLASS = 'txe-hidden-dt-col';
+  const OPEN_BUTTON_REPLACED_ATTR = 'data-txe-open-replaced';
   const STYLE_ID = 'new-taxe-leads-tweaks-style';
-  const COUNTRY_ROW_CLASS = 'copilot-lead-country-row';
-  const DETAILS_PAIRED_ATTR = 'data-copilot-details-paired';
-  const DETAIL_ROW_CLASS = 'copilot-detail-row';
-  const DETAIL_LABEL_CLASS = 'copilot-detail-label';
-  const DETAIL_VALUE_CLASS = 'copilot-detail-value';
-  const DETAILS_BOX_CLASS = 'copilot-details-box';
+  const COUNTRY_ROW_CLASS = 'txe-lead-country-row';
+  const DETAILS_PAIRED_ATTR = 'data-txe-details-paired';
+  const DETAIL_ROW_CLASS = 'txe-detail-row';
+  const DETAIL_LABEL_CLASS = 'txe-detail-label';
+  const DETAIL_VALUE_CLASS = 'txe-detail-value';
+  const DETAILS_BOX_CLASS = 'txe-details-box';
   const DETAILS_LAYOUT_VERSION = '2';
-  const INLINE_CARDS_LAYOUT_ATTR = 'data-copilot-inline-cards-layout';
+  const INLINE_CARDS_LAYOUT_ATTR = 'data-txe-inline-cards-layout';
   const INLINE_CARDS_LAYOUT_VERSION = '1';
-  const TIMELINE_TOGGLE_ATTR = 'data-copilot-timeline-toggle';
-  const TIMELINE_STATE_ATTR = 'data-copilot-timeline-state';
+  const TIMELINE_TOGGLE_ATTR = 'data-txe-timeline-toggle';
+  const TIMELINE_STATE_ATTR = 'data-txe-timeline-state';
 
-  const OPENED_LEADS_STORAGE_KEY = 'copilot_opened_leads_v1';
-  const OPENED_BTN_CLASS = 'copilot-opened-open-btn';
-  const OPENED_ROW_CLASS = 'copilot-opened-lead-row';
-  const OPEN_BTN_ATTR = 'data-copilot-open-btn';
-  const OPEN_BTN_LEAD_ID_ATTR = 'data-copilot-open-btn-lead-id';
+  const OPENED_LEADS_STORAGE_KEY = 'txe_opened_leads_v1';
+  const OPENED_BTN_CLASS = 'txe-opened-open-btn';
+  const OPENED_ROW_CLASS = 'txe-opened-lead-row';
+  const OPEN_BTN_ATTR = 'data-txe-open-btn';
+  const OPEN_BTN_LEAD_ID_ATTR = 'data-txe-open-btn-lead-id';
   const MAX_OPENED_LEADS = 5000;
 
-  const LEAD_FLAG_REPLACED_ATTR = 'data-copilot-lead-flag-replaced';
-  const LEAD_FLAG_CLASS = 'copilot-lead-flag';
-  const LEAD_YEARS_FORMATTED_ATTR = 'data-copilot-years-formatted';
+  const LEAD_FLAG_REPLACED_ATTR = 'data-txe-lead-flag-replaced';
+  const LEAD_FLAG_CLASS = 'txe-lead-flag';
+  const LEAD_YEARS_FORMATTED_ATTR = 'data-txe-years-formatted';
 
-  const LEAD_FLAGS_OBSERVER_ATTR = 'data-copilot-lead-flags-observer';
+  const LEAD_FLAGS_OBSERVER_ATTR = 'data-txe-lead-flags-observer';
   const leadFlagsObserverByTable = new WeakMap();
   let leadFlagsObserverSuppression = 0;
 
-  const STATUS_TRACKING_ATTR = 'data-copilot-status-tracking';
+  const STATUS_TRACKING_ATTR = 'data-txe-status-tracking';
   const STATUS_DEBOUNCE_MS = 350;
 
-  const LEAD_STATUS_STORAGE_KEY = 'copilot_lead_status_map_v1';
-  const LEAD_STATUS_LAST_EVENT_KEY = 'copilot_lead_status_last_v1';
-  const LIVE_STATUS_LIST_ATTR = 'data-copilot-live-status-list';
+  const LEAD_STATUS_STORAGE_KEY = 'txe_lead_status_map_v1';
+  const LEAD_STATUS_LAST_EVENT_KEY = 'txe_lead_status_last_v1';
+  const LIVE_STATUS_LIST_ATTR = 'data-txe-live-status-list';
 
-  const CREATED_DATE_RENDERED_ATTR = 'data-copilot-created-date-rendered';
-  const CREATED_DATE_CLASS = 'copilot-created-date';
-  const LEAD_HEADER_TITLE_CLASS = 'copilot-lead-header-title';
+  const CREATED_DATE_RENDERED_ATTR = 'data-txe-created-date-rendered';
+  const CREATED_DATE_CLASS = 'txe-created-date';
+  const LEAD_HEADER_TITLE_CLASS = 'txe-lead-header-title';
 
   let openedLeadIds = new Set();
   let openedLeadIdsLoadPromise = null;
@@ -58,23 +58,23 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     return String(s || '').replace(/\s+/g, ' ').trim();
   }
 
-  const COPILOT_TOOLTIP_ID = 'copilot-tooltip-bubble';
-  const COPILOT_TOOLTIP_TEXT_ATTR = 'data-copilot-tooltip';
-  const COPILOT_TOOLTIP_BOUND_ATTR = 'data-copilot-tooltip-bound';
-  let copilotTooltipListenersInstalled = false;
+  const txe_TOOLTIP_ID = 'txe-tooltip-bubble';
+  const txe_TOOLTIP_TEXT_ATTR = 'data-txe-tooltip';
+  const txe_TOOLTIP_BOUND_ATTR = 'data-txe-tooltip-bound';
+  let txeTooltipListenersInstalled = false;
 
-  const COPILOT_BAD_PHONE_TOOLTIP_ID = 'copilot-bad-phone-tooltip-bubble';
-  const COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR = 'data-copilot-bad-phone-tooltip';
+  const txe_BAD_PHONE_TOOLTIP_ID = 'txe-bad-phone-tooltip-bubble';
+  const txe_BAD_PHONE_TOOLTIP_TEXT_ATTR = 'data-txe-bad-phone-tooltip';
   let badPhoneTooltipListenersInstalled = false;
   let activeBadPhoneEl = null;
   let badPhoneEls = new Set();
 
-  const COPILOT_THEME_ATTR = 'data-copilot-theme';
-  const COPILOT_THEME_STORAGE_KEY = 'copilot_dashboard_theme_v1';
-  const COPILOT_THEME_TOGGLE_ID = 'copilot-theme-toggle';
-  const COPILOT_THEME_TOGGLE_BTN_ID = 'copilot-theme-toggle-btn';
+  const txe_THEME_ATTR = 'data-txe-theme';
+  const txe_THEME_STORAGE_KEY = 'txe_dashboard_theme_v1';
+  const txe_THEME_TOGGLE_ID = 'txe-theme-toggle';
+  const txe_THEME_TOGGLE_BTN_ID = 'txe-theme-toggle-btn';
 
-  const COPILOT_USER_ICONIZED_ATTR = 'data-copilot-user-iconized';
+  const txe_USER_ICONIZED_ATTR = 'data-txe-user-iconized';
 
   let storedThemeCache = null;
   let storedThemeLoadPromise = null;
@@ -89,8 +89,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
           return;
         }
 
-        chrome.storage.local.get([COPILOT_THEME_STORAGE_KEY], (res) => {
-          const v = res ? String(res[COPILOT_THEME_STORAGE_KEY] || '').toLowerCase() : '';
+        chrome.storage.local.get([txe_THEME_STORAGE_KEY], (res) => {
+          const v = res ? String(res[txe_THEME_STORAGE_KEY] || '').toLowerCase() : '';
           if (v === 'dark' || v === 'light') resolve(v);
           else resolve(null);
         });
@@ -101,7 +101,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       if (v === 'dark' || v === 'light') {
         storedThemeCache = v;
         try {
-          localStorage.setItem(COPILOT_THEME_STORAGE_KEY, v);
+          localStorage.setItem(txe_THEME_STORAGE_KEY, v);
         } catch {
         }
       }
@@ -114,7 +114,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function getStoredTheme() {
     if (storedThemeCache === 'dark' || storedThemeCache === 'light') return storedThemeCache;
     try {
-      const v = String(localStorage.getItem(COPILOT_THEME_STORAGE_KEY) || '').toLowerCase();
+      const v = String(localStorage.getItem(txe_THEME_STORAGE_KEY) || '').toLowerCase();
       if (v === 'dark' || v === 'light') return v;
     } catch {
     }
@@ -124,7 +124,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function storeTheme(theme) {
     try {
       storedThemeCache = theme;
-      localStorage.setItem(COPILOT_THEME_STORAGE_KEY, theme);
+      localStorage.setItem(txe_THEME_STORAGE_KEY, theme);
     } catch {
     }
 
@@ -134,7 +134,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
     try {
       if (chrome && chrome.storage && chrome.storage.local && chrome.storage.local.set) {
-        chrome.storage.local.set({ [COPILOT_THEME_STORAGE_KEY]: theme });
+        chrome.storage.local.set({ [txe_THEME_STORAGE_KEY]: theme });
       }
     } catch {
     }
@@ -142,26 +142,26 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   function applyTheme(theme) {
     const t = theme === 'dark' ? 'dark' : 'light';
-    document.documentElement.setAttribute(COPILOT_THEME_ATTR, t);
-    const btn = document.getElementById(COPILOT_THEME_TOGGLE_BTN_ID);
+    document.documentElement.setAttribute(txe_THEME_ATTR, t);
+    const btn = document.getElementById(txe_THEME_TOGGLE_BTN_ID);
     if (btn) btn.textContent = t === 'dark' ? 'Dark: On' : 'Dark: Off';
   }
 
   function toggleTheme() {
-    const current = document.documentElement.getAttribute(COPILOT_THEME_ATTR) || getStoredTheme();
+    const current = document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme();
     const next = String(current).toLowerCase() === 'dark' ? 'light' : 'dark';
     storeTheme(next);
     applyTheme(next);
   }
 
   function ensureThemeToggle() {
-    if (document.getElementById(COPILOT_THEME_TOGGLE_ID)) return;
+    if (document.getElementById(txe_THEME_TOGGLE_ID)) return;
 
     const wrap = document.createElement('div');
-    wrap.id = COPILOT_THEME_TOGGLE_ID;
+    wrap.id = txe_THEME_TOGGLE_ID;
 
     const btn = document.createElement('button');
-    btn.id = COPILOT_THEME_TOGGLE_BTN_ID;
+    btn.id = txe_THEME_TOGGLE_BTN_ID;
     btn.type = 'button';
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -181,30 +181,30 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     });
   }
 
-  function ensureCopilotTooltipBubble() {
-    let bubble = document.getElementById(COPILOT_TOOLTIP_ID);
+  function ensuretxeTooltipBubble() {
+    let bubble = document.getElementById(txe_TOOLTIP_ID);
     if (bubble) return bubble;
 
     bubble = document.createElement('div');
-    bubble.id = COPILOT_TOOLTIP_ID;
+    bubble.id = txe_TOOLTIP_ID;
     bubble.style.display = 'none';
     (document.body || document.documentElement).appendChild(bubble);
     return bubble;
   }
 
-  function hideCopilotTooltip() {
-    const bubble = document.getElementById(COPILOT_TOOLTIP_ID);
+  function hidetxeTooltip() {
+    const bubble = document.getElementById(txe_TOOLTIP_ID);
     if (!bubble) return;
     bubble.style.display = 'none';
     bubble.textContent = '';
   }
 
-  function showCopilotTooltipFor(el) {
+  function showtxeTooltipFor(el) {
     if (!el) return;
-    const text = String(el.getAttribute(COPILOT_TOOLTIP_TEXT_ATTR) || '');
+    const text = String(el.getAttribute(txe_TOOLTIP_TEXT_ATTR) || '');
     if (!text.trim()) return;
 
-    const bubble = ensureCopilotTooltipBubble();
+    const bubble = ensuretxeTooltipBubble();
     // Keep the tooltip above any page overlays by moving it to the end of <body>.
     try {
       const host = document.body || document.documentElement;
@@ -237,18 +237,18 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     bubble.style.top = `${top}px`;
   }
 
-  function ensureCopilotTooltipListeners() {
-    if (copilotTooltipListenersInstalled) return;
-    copilotTooltipListenersInstalled = true;
+  function ensuretxeTooltipListeners() {
+    if (txeTooltipListenersInstalled) return;
+    txeTooltipListenersInstalled = true;
 
     let activeTooltipTarget = null;
 
     const findTooltipTarget = (node, evt) => {
       try {
         if (node && node.closest) {
-          const closest = node.closest(`[${COPILOT_TOOLTIP_TEXT_ATTR}]`);
+          const closest = node.closest(`[${txe_TOOLTIP_TEXT_ATTR}]`);
           if (closest) {
-            const v = closest.getAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+            const v = closest.getAttribute(txe_TOOLTIP_TEXT_ATTR);
             if (v && String(v).trim()) return closest;
           }
         }
@@ -260,7 +260,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         if (Array.isArray(path)) {
           for (const p of path) {
             if (!p || !p.getAttribute) continue;
-            const v = p.getAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+            const v = p.getAttribute(txe_TOOLTIP_TEXT_ATTR);
             if (v && String(v).trim()) return p;
           }
         }
@@ -279,7 +279,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         if (!target) return;
         if (target === activeTooltipTarget) return;
         activeTooltipTarget = target;
-        showCopilotTooltipFor(activeTooltipTarget);
+        showtxeTooltipFor(activeTooltipTarget);
       },
       true
     );
@@ -294,12 +294,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         const next = findTooltipTarget(rt, e);
         if (next) {
           activeTooltipTarget = next;
-          showCopilotTooltipFor(activeTooltipTarget);
+          showtxeTooltipFor(activeTooltipTarget);
           return;
         }
 
         activeTooltipTarget = null;
-        hideCopilotTooltip();
+        hidetxeTooltip();
       },
       true
     );
@@ -307,62 +307,62 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     window.addEventListener(
       'scroll',
       () => {
-        if (activeTooltipTarget) showCopilotTooltipFor(activeTooltipTarget);
+        if (activeTooltipTarget) showtxeTooltipFor(activeTooltipTarget);
       },
       true
     );
 
     window.addEventListener('resize', () => {
-      if (activeTooltipTarget) showCopilotTooltipFor(activeTooltipTarget);
+      if (activeTooltipTarget) showtxeTooltipFor(activeTooltipTarget);
     });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         activeTooltipTarget = null;
-        hideCopilotTooltip();
+        hidetxeTooltip();
       }
     });
   }
 
-  function setCopilotTooltip(el, text) {
+  function settxeTooltip(el, text) {
     if (!el || !el.setAttribute) return;
     const t = String(text || '').trim();
     if (!t) {
       try {
-        el.removeAttribute(COPILOT_TOOLTIP_TEXT_ATTR);
+        el.removeAttribute(txe_TOOLTIP_TEXT_ATTR);
       } catch {
       }
       return;
     }
 
-    el.setAttribute(COPILOT_TOOLTIP_TEXT_ATTR, t);
+    el.setAttribute(txe_TOOLTIP_TEXT_ATTR, t);
     try {
-      el.setAttribute(COPILOT_TOOLTIP_BOUND_ATTR, '1');
+      el.setAttribute(txe_TOOLTIP_BOUND_ATTR, '1');
     } catch {
     }
-    ensureCopilotTooltipListeners();
+    ensuretxeTooltipListeners();
   }
 
   function ensureBadPhoneTooltipBubble() {
-    let bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    let bubble = document.getElementById(txe_BAD_PHONE_TOOLTIP_ID);
     if (bubble) return bubble;
 
     bubble = document.createElement('div');
-    bubble.id = COPILOT_BAD_PHONE_TOOLTIP_ID;
+    bubble.id = txe_BAD_PHONE_TOOLTIP_ID;
     bubble.style.display = 'none';
     (document.body || document.documentElement).appendChild(bubble);
     return bubble;
   }
 
   function hideBadPhoneTooltip() {
-    const bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    const bubble = document.getElementById(txe_BAD_PHONE_TOOLTIP_ID);
     if (!bubble) return;
     bubble.style.display = 'none';
     bubble.textContent = '';
   }
 
   function positionBadPhoneTooltipFor(el) {
-    const bubble = document.getElementById(COPILOT_BAD_PHONE_TOOLTIP_ID);
+    const bubble = document.getElementById(txe_BAD_PHONE_TOOLTIP_ID);
     if (!bubble || !el) return;
 
     const rect = el.getBoundingClientRect();
@@ -384,7 +384,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   function showBadPhoneTooltipFor(el) {
     if (!el) return;
-    const text = String(el.getAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR) || '');
+    const text = String(el.getAttribute(txe_BAD_PHONE_TOOLTIP_TEXT_ATTR) || '');
     if (!text.trim()) return;
 
     const bubble = ensureBadPhoneTooltipBubble();
@@ -410,7 +410,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         } catch {
         }
 
-        const hovered = under && under.closest ? under.closest(`.copilot-bad-phone[${COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR}]`) : null;
+        const hovered = under && under.closest ? under.closest(`.txe-bad-phone[${txe_BAD_PHONE_TOOLTIP_TEXT_ATTR}]`) : null;
         if (hovered === activeBadPhoneEl) return;
 
         activeBadPhoneEl = hovered;
@@ -443,25 +443,37 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     });
   }
 
-  const COPILOT_STYLE_ID = 'copilot-injected-styles';
+  const txe_STYLE_ID = 'txe-injected-styles';
 
   function ensureStyles() {
-    let style = document.getElementById(COPILOT_STYLE_ID);
+    let style = document.getElementById(txe_STYLE_ID);
     if (style) return;
 
     style = document.createElement('style');
-    style.id = COPILOT_STYLE_ID;
+    style.id = txe_STYLE_ID;
     style.textContent = `
 
-      /* Leads list: hide columns we mark via JS (utm_source, last_step, step). */
+      /* Leads list: hide columns we mark via JS (utm_source, last_step). */
       .${HIDDEN_COL_CLASS} {
         display: none !important;
       }
 
+      /* DataTables processing overlay should appear above table */
+      .dataTables_wrapper .dataTables_processing {
+        position: fixed !important;
+        z-index: 9999 !important;
+      }
+
+      /* Hide feedback widget */
+      #atlwdg-trigger,
+      .atlwdg-trigger {
+        display: none !important;
+      }
+
       /* Argon sometimes forces legacy purple/dark-blue headings; normalize to theme text in dark mode. */
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item h5,
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item h5.mb-1 {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .list-group-item h5,
+      html[${txe_THEME_ATTR}='dark'] .list-group-item h5.mb-1 {
+        color: var(--txe-text) !important;
       }
 
       button.${OPENED_BTN_CLASS} {
@@ -497,13 +509,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         background-color: rgba(40, 167, 69, 0.14) !important;
       }
 
-      #precalcs-table thead th.copilot-motiv-col,
-      #precalcs-table tbody td.copilot-motiv-col {
+      #precalcs-table thead th.txe-motiv-col,
+      #precalcs-table tbody td.txe-motiv-col {
         width: 140px;
         max-width: 140px;
       }
 
-      #precalcs-table tbody td.copilot-motiv-col {
+      #precalcs-table tbody td.txe-motiv-col {
         white-space: normal !important;
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -531,11 +543,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       #precalc_element [style*="color: #707070"],
       #precalc_element [style*="color:#707070;"],
       #precalc_element [style*="color: #707070;"] {
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
       #precalc_element a {
-        color: var(--copilot-primary) !important;
+        color: var(--txe-primary) !important;
       }
 
       .${LEAD_FLAG_CLASS} {
@@ -631,7 +643,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         width: 100%;
       }
 
-      #${COPILOT_TOOLTIP_ID} {
+      #${txe_TOOLTIP_ID} {
         position: fixed;
         z-index: 2147483647;
         max-width: 420px;
@@ -645,14 +657,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         pointer-events: none;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #${COPILOT_TOOLTIP_ID} {
-        background: var(--copilot-surface-2);
-        color: var(--copilot-text);
-        border: 1px solid var(--copilot-border);
+      html[${txe_THEME_ATTR}='dark'] #${txe_TOOLTIP_ID} {
+        background: var(--txe-surface-2);
+        color: var(--txe-text);
+        border: 1px solid var(--txe-border);
         box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
       }
 
-      #${COPILOT_BAD_PHONE_TOOLTIP_ID} {
+      #${txe_BAD_PHONE_TOOLTIP_ID} {
         position: fixed;
         z-index: 2147483647;
         max-width: 520px;
@@ -666,14 +678,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         pointer-events: none;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #${COPILOT_BAD_PHONE_TOOLTIP_ID} {
-        background: var(--copilot-surface-2);
-        color: var(--copilot-text);
-        border: 1px solid var(--copilot-border);
+      html[${txe_THEME_ATTR}='dark'] #${txe_BAD_PHONE_TOOLTIP_ID} {
+        background: var(--txe-surface-2);
+        color: var(--txe-text);
+        border: 1px solid var(--txe-border);
         box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45);
       }
 
-      #${COPILOT_THEME_TOGGLE_ID} {
+      #${txe_THEME_TOGGLE_ID} {
         position: fixed;
         left: 16px;
         bottom: 16px;
@@ -681,7 +693,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         user-select: none;
       }
 
-      #${COPILOT_THEME_TOGGLE_BTN_ID} {
+      #${txe_THEME_TOGGLE_BTN_ID} {
         appearance: none;
         border: 1px solid rgba(255, 255, 255, 0.18);
         background: rgba(108, 117, 125, 0.35);
@@ -694,12 +706,12 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         backdrop-filter: blur(6px);
       }
 
-      #${COPILOT_THEME_TOGGLE_BTN_ID}:hover {
+      #${txe_THEME_TOGGLE_BTN_ID}:hover {
         background: rgba(108, 117, 125, 0.5);
       }
 
       /* Dark mode overrides (scoped to an attribute so it is easy to disable). */
-      html[${COPILOT_THEME_ATTR}='dark'] {
+      html[${txe_THEME_ATTR}='dark'] {
         /* Preferred tokens (new). */
         --new-bg: #1b2432;
         --new-surface: #202b3b;
@@ -728,606 +740,606 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         --new-nav-active: rgba(61, 123, 255, 0.22);
         --new-radius: 12px;
 
-        /* Back-compat: keep existing '--copilot-*' rules working. */
-        --copilot-bg: var(--new-bg);
-        --copilot-surface: var(--new-surface);
-        --copilot-surface-2: var(--new-surface-2);
-        --copilot-border: var(--new-border);
-        --copilot-text: var(--new-text);
-        --copilot-muted: var(--new-muted);
-        --copilot-primary: var(--new-primary);
-        --copilot-primary-2: var(--new-primary-2);
-        --copilot-purple: var(--new-purple);
-        --copilot-green: var(--new-green);
-        --copilot-green-2: var(--new-green-2);
-        --copilot-red: var(--new-red);
-        --copilot-red-2: var(--new-red-2);
-        --copilot-sidebar: var(--new-sidebar);
-        --copilot-nav-hover: var(--new-nav-hover);
-        --copilot-nav-active: var(--new-nav-active);
-        --copilot-radius: var(--new-radius);
+        /* Back-compat: keep existing '--txe-*' rules working. */
+        --txe-bg: var(--new-bg);
+        --txe-surface: var(--new-surface);
+        --txe-surface-2: var(--new-surface-2);
+        --txe-border: var(--new-border);
+        --txe-text: var(--new-text);
+        --txe-muted: var(--new-muted);
+        --txe-primary: var(--new-primary);
+        --txe-primary-2: var(--new-primary-2);
+        --txe-purple: var(--new-purple);
+        --txe-green: var(--new-green);
+        --txe-green-2: var(--new-green-2);
+        --txe-red: var(--new-red);
+        --txe-red-2: var(--new-red-2);
+        --txe-sidebar: var(--new-sidebar);
+        --txe-nav-hover: var(--new-nav-hover);
+        --txe-nav-active: var(--new-nav-active);
+        --txe-radius: var(--new-radius);
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'],
-      html[${COPILOT_THEME_ATTR}='dark'] body {
-        background-color: var(--copilot-bg) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'],
+      html[${txe_THEME_ATTR}='dark'] body {
+        background-color: var(--txe-bg) !important;
+        color: var(--txe-text) !important;
         /* Prevent the page from horizontally overflowing a few px. */
         overflow-x: hidden !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #panel,
-      html[${COPILOT_THEME_ATTR}='dark'] .main-content {
+      html[${txe_THEME_ATTR}='dark'] #panel,
+      html[${txe_THEME_ATTR}='dark'] .main-content {
         overflow-x: hidden !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .bg-white,
-      html[${COPILOT_THEME_ATTR}='dark'] .bg-secondary,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top.bg-secondary,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-light.bg-white,
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .card-header,
-      html[${COPILOT_THEME_ATTR}='dark'] .card-footer,
-      html[${COPILOT_THEME_ATTR}='dark'] .modal-content,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-menu,
-      html[${COPILOT_THEME_ATTR}='dark'] .header,
-      html[${COPILOT_THEME_ATTR}='dark'] .footer,
-      html[${COPILOT_THEME_ATTR}='dark'] footer.footer {
-        background-color: var(--copilot-surface) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .bg-white,
+      html[${txe_THEME_ATTR}='dark'] .bg-secondary,
+      html[${txe_THEME_ATTR}='dark'] .navbar,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top.bg-secondary,
+      html[${txe_THEME_ATTR}='dark'] .navbar-light.bg-white,
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .card-header,
+      html[${txe_THEME_ATTR}='dark'] .card-footer,
+      html[${txe_THEME_ATTR}='dark'] .modal-content,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
+      html[${txe_THEME_ATTR}='dark'] .header,
+      html[${txe_THEME_ATTR}='dark'] .footer,
+      html[${txe_THEME_ATTR}='dark'] footer.footer {
+        background-color: var(--txe-surface) !important;
+        color: var(--txe-text) !important;
       }
 
       /* Tailwind-ish submit buttons (e.g. "Save") should match green submit styling. */
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-white {
-        background-color: var(--copilot-green) !important;
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-white {
+        background-color: var(--txe-green) !important;
         border-color: transparent !important;
         color: #fff !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-white:hover {
-        background-color: var(--copilot-green-2) !important;
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800:hover,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700:hover,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-white:hover {
+        background-color: var(--txe-green-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800:active,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700:active,
-      html[${COPILOT_THEME_ATTR}='dark'] button[type='submit'].bg-white:active {
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-800:active,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-gray-700:active,
+      html[${txe_THEME_ATTR}='dark'] button[type='submit'].bg-white:active {
         filter: brightness(0.95);
       }
 
       /* The header strip (above Lead Details) should blend with the page background. */
-      html[${COPILOT_THEME_ATTR}='dark'] .header {
-        background-color: var(--copilot-bg) !important;
+      html[${txe_THEME_ATTR}='dark'] .header {
+        background-color: var(--txe-bg) !important;
         background-image: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .footer,
-      html[${COPILOT_THEME_ATTR}='dark'] footer.footer {
-        background-color: var(--copilot-bg) !important;
+      html[${txe_THEME_ATTR}='dark'] .footer,
+      html[${txe_THEME_ATTR}='dark'] footer.footer {
+        background-color: var(--txe-bg) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .main-content,
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main {
-        background-color: var(--copilot-bg) !important;
+      html[${txe_THEME_ATTR}='dark'] .main-content,
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main {
+        background-color: var(--txe-bg) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .person-info-rightSidebar {
-        background-color: var(--copilot-bg) !important;
+      html[${txe_THEME_ATTR}='dark'] .person-info-rightSidebar {
+        background-color: var(--txe-bg) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .text-dark,
-      html[${COPILOT_THEME_ATTR}='dark'] .text-default,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-light .navbar-nav .nav-link,
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-link-text,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-item,
-      html[${COPILOT_THEME_ATTR}='dark'] h1,
-      html[${COPILOT_THEME_ATTR}='dark'] h2,
-      html[${COPILOT_THEME_ATTR}='dark'] h3,
-      html[${COPILOT_THEME_ATTR}='dark'] h4,
-      html[${COPILOT_THEME_ATTR}='dark'] .h5,
-      html[${COPILOT_THEME_ATTR}='dark'] h6 {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .text-dark,
+      html[${txe_THEME_ATTR}='dark'] .text-default,
+      html[${txe_THEME_ATTR}='dark'] .navbar-light .navbar-nav .nav-link,
+      html[${txe_THEME_ATTR}='dark'] .nav-link-text,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-item,
+      html[${txe_THEME_ATTR}='dark'] h1,
+      html[${txe_THEME_ATTR}='dark'] h2,
+      html[${txe_THEME_ATTR}='dark'] h3,
+      html[${txe_THEME_ATTR}='dark'] h4,
+      html[${txe_THEME_ATTR}='dark'] .h5,
+      html[${txe_THEME_ATTR}='dark'] h6 {
+        color: var(--txe-text) !important;
       }
 
       /* Argon also uses utility heading classes (.h1-.h6) that can stay #32325d. */
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h1,
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h2,
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h3,
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h4,
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h5,
-      html[${COPILOT_THEME_ATTR}='dark'] .card .h6 {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .card .h1,
+      html[${txe_THEME_ATTR}='dark'] .card .h2,
+      html[${txe_THEME_ATTR}='dark'] .card .h3,
+      html[${txe_THEME_ATTR}='dark'] .card .h4,
+      html[${txe_THEME_ATTR}='dark'] .card .h5,
+      html[${txe_THEME_ATTR}='dark'] .card .h6 {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .text-muted,
-      html[${COPILOT_THEME_ATTR}='dark'] small.text-muted,
-      html[${COPILOT_THEME_ATTR}='dark'] .copyright,
-      html[${COPILOT_THEME_ATTR}='dark'] .footer .text-muted {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .text-muted,
+      html[${txe_THEME_ATTR}='dark'] small.text-muted,
+      html[${txe_THEME_ATTR}='dark'] .copyright,
+      html[${txe_THEME_ATTR}='dark'] .footer .text-muted {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-item:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-item:focus {
-        background-color: var(--copilot-nav-hover) !important;
+      html[${txe_THEME_ATTR}='dark'] .dropdown-item:hover,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-item:focus {
+        background-color: var(--txe-nav-hover) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .border,
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-divider,
-      html[${COPILOT_THEME_ATTR}='dark'] .table th,
-      html[${COPILOT_THEME_ATTR}='dark'] .table td,
-      html[${COPILOT_THEME_ATTR}='dark'] .table-custom th,
-      html[${COPILOT_THEME_ATTR}='dark'] .table-custom td {
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .border,
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-divider,
+      html[${txe_THEME_ATTR}='dark'] .table th,
+      html[${txe_THEME_ATTR}='dark'] .table td,
+      html[${txe_THEME_ATTR}='dark'] .table-custom th,
+      html[${txe_THEME_ATTR}='dark'] .table-custom td {
+        border-color: var(--txe-border) !important;
       }
 
       /* Phone validation: keep the red border visible even though we override '.border' above. */
-      html[${COPILOT_THEME_ATTR}='dark'] .copilot-bad-phone,
-      html[${COPILOT_THEME_ATTR}='dark'] .copilot-bad-phone.border {
-        border-color: var(--copilot-red-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .txe-bad-phone,
+      html[${txe_THEME_ATTR}='dark'] .txe-bad-phone.border {
+        border-color: var(--txe-red-2) !important;
         display: inline-block;
         cursor: help;
       }
 
-      /* Remove the bright "card borders" look. Keep table cell separators subtle via --copilot-border above. */
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .modal-content,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-menu,
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters {
+      /* Remove the bright "card borders" look. Keep table cell separators subtle via --txe-border above. */
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .modal-content,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters {
         border-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .modal-content {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .modal-content {
+        background-color: var(--txe-surface-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .shadow,
-      html[${COPILOT_THEME_ATTR}='dark'] .shadow-sm,
-      html[${COPILOT_THEME_ATTR}='dark'] .shadow-lg {
+      html[${txe_THEME_ATTR}='dark'] .shadow,
+      html[${txe_THEME_ATTR}='dark'] .shadow-sm,
+      html[${txe_THEME_ATTR}='dark'] .shadow-lg {
         box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.45) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-menu,
-      html[${COPILOT_THEME_ATTR}='dark'] .modal-content,
-      html[${COPILOT_THEME_ATTR}='dark'] .header,
-      html[${COPILOT_THEME_ATTR}='dark'] .footer {
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
+      html[${txe_THEME_ATTR}='dark'] .modal-content,
+      html[${txe_THEME_ATTR}='dark'] .header,
+      html[${txe_THEME_ATTR}='dark'] .footer {
         /* Argon uses colored shadows (e.g. rgba(136,152,170,.15)) that look like a white glow on dark bg. */
         box-shadow: none !important;
         filter: none !important;
       }
 
       /* Keep the navbar distinguishable: subtle border + dark shadow (not white glow). */
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top {
+      html[${txe_THEME_ATTR}='dark'] .navbar,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top {
         border-bottom: none !important;
         box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main {
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main {
         border-right: none !important;
       }
 
       /* Make the burger lines a touch lighter. */
-      html[${COPILOT_THEME_ATTR}='dark'] .sidenav-toggler-line {
+      html[${txe_THEME_ATTR}='dark'] .sidenav-toggler-line {
         background-color: rgba(255, 255, 255, 0.70) !important;
       }
 
       /* Sidebar + nav (DashStack-like hover/active). */
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main,
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main.bg-white,
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main.navbar-light.bg-white {
-        background-color: var(--copilot-sidebar) !important;
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main,
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main.bg-white,
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-light.bg-white {
+        background-color: var(--txe-sidebar) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link {
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link {
         color: rgba(231, 231, 235, 0.78) !important;
-        border-radius: calc(var(--copilot-radius) - 2px) !important;
+        border-radius: calc(var(--txe-radius) - 2px) !important;
         transition: background-color 120ms ease, color 120ms ease;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link:hover {
-        background-color: var(--copilot-nav-hover) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link:hover {
+        background-color: var(--txe-nav-hover) !important;
+        color: var(--txe-text) !important;
       }
 
       /* Match Argon sizing: active highlight should be inset (not full sidenav width). */
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav > .nav-item > .nav-link.active,
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav .nav .nav-link.active {
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav > .nav-item > .nav-link.active,
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav .nav .nav-link.active {
         margin-right: .5rem !important;
         margin-left: .5rem !important;
         padding-right: 1rem !important;
         padding-left: 1rem !important;
         border-radius: .375rem !important;
-        background-color: var(--copilot-nav-active) !important;
-        color: var(--copilot-text) !important;
-        box-shadow: inset 3px 0 0 0 var(--copilot-primary) !important;
+        background-color: var(--txe-nav-active) !important;
+        color: var(--txe-text) !important;
+        box-shadow: inset 3px 0 0 0 var(--txe-primary) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link i,
-      html[${COPILOT_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link svg {
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link i,
+      html[${txe_THEME_ATTR}='dark'] #sidenav-main .navbar-nav .nav-link svg {
         color: currentColor !important;
       }
 
       /* Global rounding to better match modern dashboard kits. */
-      html[${COPILOT_THEME_ATTR}='dark'] .card,
-      html[${COPILOT_THEME_ATTR}='dark'] .dropdown-menu,
-      html[${COPILOT_THEME_ATTR}='dark'] .modal-content,
-      html[${COPILOT_THEME_ATTR}='dark'] .form-control,
-      html[${COPILOT_THEME_ATTR}='dark'] input,
-      html[${COPILOT_THEME_ATTR}='dark'] select,
-      html[${COPILOT_THEME_ATTR}='dark'] textarea {
-        border-radius: var(--copilot-radius) !important;
+      html[${txe_THEME_ATTR}='dark'] .card,
+      html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
+      html[${txe_THEME_ATTR}='dark'] .modal-content,
+      html[${txe_THEME_ATTR}='dark'] .form-control,
+      html[${txe_THEME_ATTR}='dark'] input,
+      html[${txe_THEME_ATTR}='dark'] select,
+      html[${txe_THEME_ATTR}='dark'] textarea {
+        border-radius: var(--txe-radius) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn {
-        border-radius: calc(var(--copilot-radius) - 2px) !important;
+      html[${txe_THEME_ATTR}='dark'] .btn {
+        border-radius: calc(var(--txe-radius) - 2px) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .selected {
+      html[${txe_THEME_ATTR}='dark'] .selected {
         background-color: rgba(255, 255, 255, 0.06) !important;
         border-color: rgba(255, 255, 255, 0.10) !important;
       }
 
       /* Remove the remaining white-ish glows; keep subtle, tinted focus rings. */
-      html[${COPILOT_THEME_ATTR}='dark'] .btn,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge,
-      html[${COPILOT_THEME_ATTR}='dark'] .form-control,
-      html[${COPILOT_THEME_ATTR}='dark'] .custom-control-input:focus ~ .custom-control-label::before {
+      html[${txe_THEME_ATTR}='dark'] .btn,
+      html[${txe_THEME_ATTR}='dark'] .badge,
+      html[${txe_THEME_ATTR}='dark'] .form-control,
+      html[${txe_THEME_ATTR}='dark'] .custom-control-input:focus ~ .custom-control-label::before {
         box-shadow: none !important;
       }
 
       /* Badges: prevent white/light variants from staying bright on dark pages. */
-      html[${COPILOT_THEME_ATTR}='dark'] .badge.badge-white,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge.badge-light,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge.badge-neutral,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge.badge-default,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge.badge-info {
+      html[${txe_THEME_ATTR}='dark'] .badge.badge-white,
+      html[${txe_THEME_ATTR}='dark'] .badge.badge-light,
+      html[${txe_THEME_ATTR}='dark'] .badge.badge-neutral,
+      html[${txe_THEME_ATTR}='dark'] .badge.badge-default,
+      html[${txe_THEME_ATTR}='dark'] .badge.badge-info {
         background-color: rgba(255, 255, 255, 0.10) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
       }
 
       /* Some pages use only "badge-info" and still render as white. */
-      html[${COPILOT_THEME_ATTR}='dark'] .badge-info {
+      html[${txe_THEME_ATTR}='dark'] .badge-info {
         background-color: rgba(255, 255, 255, 0.10) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
       }
 
       /* Select2: force dark surfaces (default theme is white). */
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-container {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-selection--single,
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-selection--single,
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-selection--single .select2-selection__rendered {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple .select2-selection__choice {
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple .select2-selection__choice {
         background-color: rgba(255, 255, 255, 0.10) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-dropdown {
-        background-color: var(--copilot-surface) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-dropdown {
+        background-color: var(--txe-surface) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-results {
+      html[${txe_THEME_ATTR}='dark'] .select2-results {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-results__options {
+      html[${txe_THEME_ATTR}='dark'] .select2-results__options {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-results__option {
-        color: var(--copilot-text) !important;
-        background-color: transparent !important;
-      }
-
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-results__option.select2-results__message {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-results__option {
+        color: var(--txe-text) !important;
         background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-results__option--highlighted[aria-selected] {
-        background-color: var(--copilot-nav-hover) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .select2-results__option.select2-results__message {
+        color: var(--txe-muted) !important;
+        background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--default .select2-results__option[aria-selected='true'] {
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--txe-nav-hover) !important;
+        color: var(--txe-text) !important;
+      }
+
+      html[${txe_THEME_ATTR}='dark'] .select2-container--default .select2-results__option[aria-selected='true'] {
         background-color: rgba(61, 123, 255, 0.14) !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--focus .select2-selection,
-      html[${COPILOT_THEME_ATTR}='dark'] .select2-container--open .select2-selection {
+      html[${txe_THEME_ATTR}='dark'] .select2-container--focus .select2-selection,
+      html[${txe_THEME_ATTR}='dark'] .select2-container--open .select2-selection {
         border-color: rgba(61, 123, 255, 0.55) !important;
         box-shadow: 0 0 0 0.12rem rgba(61, 123, 255, 0.22) !important;
       }
 
       /* Vue Multiselect (classes: multiselect__*). */
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__tags {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__tags {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__input {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__input {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__input::placeholder {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__input::placeholder {
+        color: var(--txe-muted) !important;
         opacity: 1 !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__placeholder {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__placeholder {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__select {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__select {
         background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__select::before {
-        border-color: var(--copilot-muted) transparent transparent transparent !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__select::before {
+        border-color: var(--txe-muted) transparent transparent transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__content-wrapper {
-        background-color: var(--copilot-surface) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__content-wrapper {
+        background-color: var(--txe-surface) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__content {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__content {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option--highlight,
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option--highlight::after {
-        background-color: var(--copilot-nav-hover) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option--highlight,
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option--highlight::after {
+        background-color: var(--txe-nav-hover) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option--selected,
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option--selected::after {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option--selected,
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option--selected::after {
         background-color: rgba(61, 123, 255, 0.14) !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__option--disabled {
+      html[${txe_THEME_ATTR}='dark'] .multiselect__option--disabled {
         color: rgba(219, 228, 243, 0.40) !important;
         background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .multiselect__spinner {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .multiselect__spinner {
+        background-color: var(--txe-surface-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn.focus,
-      html[${COPILOT_THEME_ATTR}='dark'] .form-control:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] input:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] select:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] textarea:focus {
+      html[${txe_THEME_ATTR}='dark'] .btn:focus,
+      html[${txe_THEME_ATTR}='dark'] .btn.focus,
+      html[${txe_THEME_ATTR}='dark'] .form-control:focus,
+      html[${txe_THEME_ATTR}='dark'] input:focus,
+      html[${txe_THEME_ATTR}='dark'] select:focus,
+      html[${txe_THEME_ATTR}='dark'] textarea:focus {
         outline: none !important;
         box-shadow: 0 0 0 0.12rem rgba(61, 123, 255, 0.22) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-primary:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-primary.focus {
+      html[${txe_THEME_ATTR}='dark'] .btn-primary:focus,
+      html[${txe_THEME_ATTR}='dark'] .btn-primary.focus {
         box-shadow: 0 0 0 0.14rem rgba(61, 123, 255, 0.30) !important;
       }
 
       /* Doc type selector tiles (doc-type-grid / doc-type-card). */
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-grid {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-grid {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-option {
+      html[${txe_THEME_ATTR}='dark'] .doc-type-option {
         color: inherit !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-option input[type='radio'] {
-        accent-color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-option input[type='radio'] {
+        accent-color: var(--txe-primary) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-card {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-card {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-option:hover .doc-type-card {
-        background-color: color-mix(in srgb, var(--copilot-surface-2) 90%, #ffffff 10%) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-option:hover .doc-type-card {
+        background-color: color-mix(in srgb, var(--txe-surface-2) 90%, #ffffff 10%) !important;
         background-color: rgba(255, 255, 255, 0.06) !important;
         border-color: rgba(255, 255, 255, 0.18) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-option input[type='radio']:checked + .doc-type-card {
+      html[${txe_THEME_ATTR}='dark'] .doc-type-option input[type='radio']:checked + .doc-type-card {
         border-color: rgba(61, 123, 255, 0.55) !important;
         background-color: rgba(61, 123, 255, 0.10) !important;
         box-shadow: 0 0 0 0.12rem rgba(61, 123, 255, 0.18) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-option input[type='radio']:focus-visible + .doc-type-card {
+      html[${txe_THEME_ATTR}='dark'] .doc-type-option input[type='radio']:focus-visible + .doc-type-card {
         outline: none !important;
         box-shadow: 0 0 0 0.14rem rgba(61, 123, 255, 0.26) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-title {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-title {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-subtitle {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-subtitle {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-title i,
-      html[${COPILOT_THEME_ATTR}='dark'] .doc-type-title svg {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .doc-type-title i,
+      html[${txe_THEME_ATTR}='dark'] .doc-type-title svg {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-danger:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-danger.focus {
+      html[${txe_THEME_ATTR}='dark'] .btn-danger:focus,
+      html[${txe_THEME_ATTR}='dark'] .btn-danger.focus {
         box-shadow: 0 0 0 0.14rem rgba(239, 68, 68, 0.26) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .table,
-      html[${COPILOT_THEME_ATTR}='dark'] table {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .table,
+      html[${txe_THEME_ATTR}='dark'] table {
+        color: var(--txe-text) !important;
       }
 
       /* vue3-easy-data-table: defaults to white; force dark surfaces. */
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__main,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__body,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__header,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__footer,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table table,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table .table-header {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__main,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__body,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__header,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__footer,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table table,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table .table-header {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table thead,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table thead th,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table .table-header {
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table thead,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table thead th,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table .table-header {
         background-color: rgba(255, 255, 255, 0.04) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table tbody td,
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__body td {
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table tbody td,
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__body td {
         background-color: transparent !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .vue3-easy-data-table__body tr:hover td {
+      html[${txe_THEME_ATTR}='dark'] .vue3-easy-data-table__body tr:hover td {
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .easy-checkbox,
-      html[${COPILOT_THEME_ATTR}='dark'] .easy-checkbox * {
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .easy-checkbox,
+      html[${txe_THEME_ATTR}='dark'] .easy-checkbox * {
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .direction-left,
-      html[${COPILOT_THEME_ATTR}='dark'] .expand-icon,
-      html[${COPILOT_THEME_ATTR}='dark'] .can-expand {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .direction-left,
+      html[${txe_THEME_ATTR}='dark'] .expand-icon,
+      html[${txe_THEME_ATTR}='dark'] .can-expand {
+        color: var(--txe-muted) !important;
         fill: currentColor !important;
         background-color: transparent !important;
       }
 
       /* Some nav items get a white background on certain pages; neutralize it. */
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-item,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-nav .nav-item,
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-item > .nav-link,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-nav .nav-item > .nav-link {
+      html[${txe_THEME_ATTR}='dark'] .nav-item,
+      html[${txe_THEME_ATTR}='dark'] .navbar-nav .nav-item,
+      html[${txe_THEME_ATTR}='dark'] .nav-item > .nav-link,
+      html[${txe_THEME_ATTR}='dark'] .navbar-nav .nav-item > .nav-link {
         background-color: transparent !important;
       }
 
       /* DataTables: retint the remaining white container borders. */
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper,
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable,
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable.no-footer,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper.no-footer .dataTables_scrollBody,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scroll,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollHead,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollHeadInner,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollBody {
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .data-table,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper,
+      html[${txe_THEME_ATTR}='dark'] table.dataTable,
+      html[${txe_THEME_ATTR}='dark'] table.dataTable.no-footer,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper.no-footer .dataTables_scrollBody,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scroll,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollHead,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollHeadInner,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollBody {
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper.no-footer .dataTables_scrollBody,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollBody {
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper.no-footer .dataTables_scrollBody,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_scrollBody {
+        border: 1px solid var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .table thead th,
-      html[${COPILOT_THEME_ATTR}='dark'] thead {
+      html[${txe_THEME_ATTR}='dark'] .table thead th,
+      html[${txe_THEME_ATTR}='dark'] thead {
         background-color: rgba(255, 255, 255, 0.04) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .table-hover tbody tr:hover {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .table-hover tbody tr:hover {
+        color: var(--txe-text) !important;
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .table-custom th,
-      html[${COPILOT_THEME_ATTR}='dark'] .table-custom td {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .table-custom th,
+      html[${txe_THEME_ATTR}='dark'] .table-custom td {
+        background-color: var(--txe-surface-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .table-custom tbody tr:hover {
+      html[${txe_THEME_ATTR}='dark'] .table-custom tbody tr:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55) !important;
       }
 
       /* Pagination / DataTables controls (often remain white). */
       /* Keep the site's default sizing/spacing; only recolor. */
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .pagination,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .pagination,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_wrapper .pagination {
-        background-color: var(--copilot-surface) !important;
+      html[${txe_THEME_ATTR}='dark'] .data-table .pagination,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .pagination,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_wrapper .pagination {
+        background-color: var(--txe-surface) !important;
         box-shadow: 0 0 8px rgba(0, 0, 0, 0.55) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-link {
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-link {
         background-color: transparent !important;
         border-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
         box-shadow: none !important;
       }
 
       /* DataTables adds inline colors on inner <span>; force it to inherit our theme. */
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-link span,
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-link i {
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-link span,
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-link i {
         color: inherit !important;
       }
 
@@ -1337,22 +1349,22 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
        * The "Next" control uses an inner <span>, so this becomes a white hover blob.
        * Keep layout intact; only neutralize that background in dark mode.
        */
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .page-item.next span,
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .page-item.next span:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .page-item.previous span,
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .page-item.previous span:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next span,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next span:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous span,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous span:hover {
+      html[${txe_THEME_ATTR}='dark'] .data-table .page-item.next span,
+      html[${txe_THEME_ATTR}='dark'] .data-table .page-item.next span:hover,
+      html[${txe_THEME_ATTR}='dark'] .data-table .page-item.previous span,
+      html[${txe_THEME_ATTR}='dark'] .data-table .page-item.previous span:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next span,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next span:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous span,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous span:hover {
         background-color: transparent !important;
       }
 
       /* Make Next/Prev hitbox + hover background exactly 50px wide. */
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-item.next .page-link,
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-item.previous .page-link,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link {
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-item.next .page-link,
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-item.previous .page-link,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link {
         width: 50px !important;
         box-sizing: border-box !important;
         display: inline-flex !important;
@@ -1360,530 +1372,530 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         justify-content: center !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-item.first .page-link {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-item.first .page-link {
+        color: var(--txe-muted) !important;
         width: 50px !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-item.disabled .page-link {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-item.disabled .page-link {
+        color: var(--txe-muted) !important;
         width: 50px !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-item.next:not(.disabled) .page-link {
-        color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-item.next:not(.disabled) .page-link {
+        color: var(--txe-primary) !important;
         width: 50px !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .pagination .page-link:hover {
-        background-color: var(--copilot-nav-hover) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .pagination .page-link:hover {
+        background-color: var(--txe-nav-hover) !important;
+        color: var(--txe-text) !important;
       }
 
       /* DataTables/Bootstrap can apply a light hover bg; force dark hover for prev/next. */
-      html[${COPILOT_THEME_ATTR}='dark'] .data-table .pagination .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .pagination .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_wrapper .pagination .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link:hover {
-        background-color: var(--copilot-nav-hover) !important;
+      html[${txe_THEME_ATTR}='dark'] .data-table .pagination .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .pagination .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_wrapper .pagination .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link:hover {
+        background-color: var(--txe-nav-hover) !important;
         border-color: transparent !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
         width: 50px !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link:hover {
-        color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link:hover {
+        color: var(--txe-primary) !important;
       }
 
       /* Some themes draw hover/focus via shadows/pseudo elements; neutralize for pager links. */
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link:active,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link:focus,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link:active {
-        background: var(--copilot-nav-hover) !important;
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link:focus,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link:active,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link:hover,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link:focus,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link:active {
+        background: var(--txe-nav-hover) !important;
         background-image: none !important;
         box-shadow: none !important;
         outline: none !important;
         filter: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link::before,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_next .page-link::after,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link::before,
-      html[${COPILOT_THEME_ATTR}='dark'] #leads-table_previous .page-link::after {
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link::before,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_next .page-link::after,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link::before,
+      html[${txe_THEME_ATTR}='dark'] #leads-table_previous .page-link::after {
         content: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_info,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_length,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_filter {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_info,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_length,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_filter {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_length select,
-      html[${COPILOT_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_filter input {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_length select,
+      html[${txe_THEME_ATTR}='dark'] .dataTables_wrapper .dataTables_filter input {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .close,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-close {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .close,
+      html[${txe_THEME_ATTR}='dark'] .btn-close {
+        color: var(--txe-muted) !important;
         text-shadow: none !important;
         opacity: 0.9 !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .form-control,
-      html[${COPILOT_THEME_ATTR}='dark'] input,
-      html[${COPILOT_THEME_ATTR}='dark'] select,
-      html[${COPILOT_THEME_ATTR}='dark'] textarea,
-      html[${COPILOT_THEME_ATTR}='dark'] .input-group-text {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .form-control,
+      html[${txe_THEME_ATTR}='dark'] input,
+      html[${txe_THEME_ATTR}='dark'] select,
+      html[${txe_THEME_ATTR}='dark'] textarea,
+      html[${txe_THEME_ATTR}='dark'] .input-group-text {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] textarea.form-control {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] textarea.form-control {
+        background-color: var(--txe-surface-2) !important;
       }
 
       /* Argon/Bootstrap alerts + toasts (and other notification UIs). */
-      html[${COPILOT_THEME_ATTR}='dark'] .alert,
-      html[${COPILOT_THEME_ATTR}='dark'] .toast,
-      html[${COPILOT_THEME_ATTR}='dark'] .toast-header,
-      html[${COPILOT_THEME_ATTR}='dark'] .toast-body {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .alert,
+      html[${txe_THEME_ATTR}='dark'] .toast,
+      html[${txe_THEME_ATTR}='dark'] .toast-header,
+      html[${txe_THEME_ATTR}='dark'] .toast-body {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .alert a {
-        color: var(--copilot-green) !important;
+      html[${txe_THEME_ATTR}='dark'] .alert a {
+        color: var(--txe-green) !important;
       }
 
       /* SweetAlert2 (inline styles in the dashboard are white by default). */
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-container {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .swal2-container {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-popup,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-modal,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-toast {
-        background: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .swal2-popup,
+      html[${txe_THEME_ATTR}='dark'] .swal2-modal,
+      html[${txe_THEME_ATTR}='dark'] .swal2-toast {
+        background: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55) !important;
       }
 
       /* Leads list: session search UI uses inline light styles. */
-      html[${COPILOT_THEME_ATTR}='dark'] #session-search {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] #session-search {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #session-search svg {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] #session-search svg {
+        color: var(--txe-muted) !important;
         fill: currentColor !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #new_search,
-      html[${COPILOT_THEME_ATTR}='dark'] #search_client,
-      html[${COPILOT_THEME_ATTR}='dark'] #search_staff_members {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] #new_search,
+      html[${txe_THEME_ATTR}='dark'] #search_client,
+      html[${txe_THEME_ATTR}='dark'] #search_staff_members {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
       /* Expanded search UI wrapper (prevents an outer white box when expanding). */
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container.active,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container.open,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container:focus-within {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        border-radius: var(--copilot-radius) !important;
+      html[${txe_THEME_ATTR}='dark'] .search-container,
+      html[${txe_THEME_ATTR}='dark'] .search-container.active,
+      html[${txe_THEME_ATTR}='dark'] .search-container.open,
+      html[${txe_THEME_ATTR}='dark'] .search-container:focus-within {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        border-radius: var(--txe-radius) !important;
         box-shadow: none !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .search-icon,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .cancel-icon {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .search-container .search-icon,
+      html[${txe_THEME_ATTR}='dark'] .search-container .cancel-icon {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .search-icon svg,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .cancel-icon svg {
+      html[${txe_THEME_ATTR}='dark'] .search-container .search-icon svg,
+      html[${txe_THEME_ATTR}='dark'] .search-container .cancel-icon svg {
         color: currentColor !important;
         fill: currentColor !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .search-icon svg path,
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .cancel-icon svg path {
+      html[${txe_THEME_ATTR}='dark'] .search-container .search-icon svg path,
+      html[${txe_THEME_ATTR}='dark'] .search-container .cancel-icon svg path {
         fill: currentColor !important;
       }
 
       /* If the expanded search uses a dropdown/menu for results, keep it dark too. */
-      html[${COPILOT_THEME_ATTR}='dark'] .search-container .dropdown-menu {
-        background-color: var(--copilot-surface) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .search-container .dropdown-menu {
+        background-color: var(--txe-surface) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #new_search::placeholder,
-      html[${COPILOT_THEME_ATTR}='dark'] #search_client::placeholder,
-      html[${COPILOT_THEME_ATTR}='dark'] #search_staff_members::placeholder {
+      html[${txe_THEME_ATTR}='dark'] #new_search::placeholder,
+      html[${txe_THEME_ATTR}='dark'] #search_client::placeholder,
+      html[${txe_THEME_ATTR}='dark'] #search_staff_members::placeholder {
         color: rgba(231, 231, 235, 0.55) !important;
       }
 
       /* Comments list (list-group items are white in Argon by default). */
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item {
-        background-color: var(--copilot-surface-2) !important;
-        color: var(--copilot-text) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .list-group-item {
+        background-color: var(--txe-surface-2) !important;
+        color: var(--txe-text) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item-action:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item-action:focus {
+      html[${txe_THEME_ATTR}='dark'] .list-group-item-action:hover,
+      html[${txe_THEME_ATTR}='dark'] .list-group-item-action:focus {
         background-color: rgba(255, 255, 255, 0.06) !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .list-group-item small {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .list-group-item small {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-title,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-html-container,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-content,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-footer {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .swal2-title,
+      html[${txe_THEME_ATTR}='dark'] .swal2-html-container,
+      html[${txe_THEME_ATTR}='dark'] .swal2-content,
+      html[${txe_THEME_ATTR}='dark'] .swal2-footer {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-close {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .swal2-close {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-input,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-textarea,
-      html[${COPILOT_THEME_ATTR}='dark'] .swal2-select {
-        background: var(--copilot-surface) !important;
-        color: var(--copilot-text) !important;
-        border: 1px solid var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .swal2-input,
+      html[${txe_THEME_ATTR}='dark'] .swal2-textarea,
+      html[${txe_THEME_ATTR}='dark'] .swal2-select {
+        background: var(--txe-surface) !important;
+        color: var(--txe-text) !important;
+        border: 1px solid var(--txe-border) !important;
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-primary,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge-primary,
-      html[${COPILOT_THEME_ATTR}='dark'] .bg-primary {
-        background-color: var(--copilot-primary) !important;
-        border-color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] .btn-primary,
+      html[${txe_THEME_ATTR}='dark'] .badge-primary,
+      html[${txe_THEME_ATTR}='dark'] .bg-primary {
+        background-color: var(--txe-primary) !important;
+        border-color: var(--txe-primary) !important;
         color: #fff !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-primary:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-primary:focus {
-        background-color: var(--copilot-primary-2) !important;
-        border-color: var(--copilot-primary-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .btn-primary:hover,
+      html[${txe_THEME_ATTR}='dark'] .btn-primary:focus {
+        background-color: var(--txe-primary-2) !important;
+        border-color: var(--txe-primary-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-danger,
-      html[${COPILOT_THEME_ATTR}='dark'] .badge-danger,
-      html[${COPILOT_THEME_ATTR}='dark'] .bg-danger {
-        background-color: var(--copilot-red) !important;
-        border-color: var(--copilot-red) !important;
-        color: var(--copilot-bg) !important;
+      html[${txe_THEME_ATTR}='dark'] .btn-danger,
+      html[${txe_THEME_ATTR}='dark'] .badge-danger,
+      html[${txe_THEME_ATTR}='dark'] .bg-danger {
+        background-color: var(--txe-red) !important;
+        border-color: var(--txe-red) !important;
+        color: var(--txe-bg) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-danger:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .btn-danger:focus {
-        background-color: var(--copilot-red-2) !important;
-        border-color: var(--copilot-red-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .btn-danger:hover,
+      html[${txe_THEME_ATTR}='dark'] .btn-danger:focus {
+        background-color: var(--txe-red-2) !important;
+        border-color: var(--txe-red-2) !important;
       }
 
       /* Dark-mode active nav items (avoid white backgrounds). */
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-nav .nav-link.active,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-nav .active > .nav-link,
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-pills .nav-link.active,
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-pills .show > .nav-link {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .navbar-nav .nav-link.active,
+      html[${txe_THEME_ATTR}='dark'] .navbar-nav .active > .nav-link,
+      html[${txe_THEME_ATTR}='dark'] .nav-pills .nav-link.active,
+      html[${txe_THEME_ATTR}='dark'] .nav-pills .show > .nav-link {
+        color: var(--txe-text) !important;
         background-color: rgba(255, 255, 255, 0.06) !important;
         border-radius: 8px;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .navbar-nav .nav-link,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .navbar-nav .nav-link i {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .navbar-nav .nav-link,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .navbar-nav .nav-link i {
+        color: var(--txe-text) !important;
       }
 
       /* Profile dropdown/name text sometimes stays dark. */
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .nav-link .media-body,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .nav-link .media-body span,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .dropdown-item {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .nav-link .media-body,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .nav-link .media-body span,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .dropdown-item {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu * {
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu * {
         color: inherit;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .nav-item.dropdown h1,
+      html[${txe_THEME_ATTR}='dark'] .nav-item.dropdown h1,
       .nav-item.dropdown,
       #selectAccount,
       #selectStaff {
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .card-footer {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .card-footer {
+        background-color: var(--txe-surface-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .text-muted,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu small,
-      html[${COPILOT_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .small {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .text-muted,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu small,
+      html[${txe_THEME_ATTR}='dark'] .navbar-top .dropdown-menu .small {
+        color: var(--txe-muted) !important;
       }
 
       /* Applicants filters: remove light borders/shadows and recolor counters/icons. */
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters {
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters {
         border: none !important;
         box-shadow: none !important;
       }
 
       /* Argon uses a solid purple background for the selected filter; keep it subtle on dark. */
-      html[${COPILOT_THEME_ATTR}='dark'] .selectedFilterBackground {
+      html[${txe_THEME_ATTR}='dark'] .selectedFilterBackground {
         background-color: rgba(167, 139, 250, 0.14) !important;
-        background-color: color-mix(in srgb, var(--copilot-purple) 18%, transparent) !important;
+        background-color: color-mix(in srgb, var(--txe-purple) 18%, transparent) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #completedCounter,
-      html[${COPILOT_THEME_ATTR}='dark'] #seenCounter {
-        color: var(--copilot-purple) !important;
+      html[${txe_THEME_ATTR}='dark'] #completedCounter,
+      html[${txe_THEME_ATTR}='dark'] #seenCounter {
+        color: var(--txe-purple) !important;
       }
 
       /* Confirmed filter sometimes renders smaller than the other tiles; normalize sizing. */
-      html[${COPILOT_THEME_ATTR}='dark'] #confirmedFilter {
+      html[${txe_THEME_ATTR}='dark'] #confirmedFilter {
         font-size: 1rem !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #confirmedFilter .filter-titles {
+      html[${txe_THEME_ATTR}='dark'] #confirmedFilter .filter-titles {
         font-size: 0.875rem !important;
         font-weight: 600 !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #confirmedFilter > div > svg {
+      html[${txe_THEME_ATTR}='dark'] #confirmedFilter > div > svg {
         width: 39px !important;
         height: 38px !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] #confirmedCounter {
+      html[${txe_THEME_ATTR}='dark'] #confirmedCounter {
         font-size: 1rem !important;
         font-weight: 600 !important;
       }
 
       /* The filter icons are inline SVG with light rect backgrounds; retint them in dark mode. */
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters svg rect {
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters svg rect {
         fill: rgba(255, 255, 255, 0.08) !important;
       }
 
       /* Replace Argon's dark-purple accents inside inline SVGs with the theme purple token. */
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#311B92"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#673AB7"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#512DA8"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#5E35B1"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#4527A0"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#311b92"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#673ab7"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#512da8"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#5e35b1"],
-      html[${COPILOT_THEME_ATTR}='dark'] svg [fill="#4527a0"] {
-        fill: var(--copilot-purple) !important;
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#311B92"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#673AB7"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#512DA8"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#5E35B1"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#4527A0"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#311b92"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#673ab7"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#512da8"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#5e35b1"],
+      html[${txe_THEME_ATTR}='dark'] svg [fill="#4527a0"] {
+        fill: var(--txe-purple) !important;
       }
 
       /* Also catch inline styles that hardcode Argon purple for text/backgrounds. */
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color: #673AB7"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color:#673AB7"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color: #311B92"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color:#311B92"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color: #512DA8"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color:#32325d"],
-      html[${COPILOT_THEME_ATTR}='dark'] [style*="color:#512DA8"] {
-        color: var(--copilot-purple) !important;
+      html[${txe_THEME_ATTR}='dark'] [style*="color: #673AB7"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color:#673AB7"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color: #311B92"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color:#311B92"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color: #512DA8"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color:#32325d"],
+      html[${txe_THEME_ATTR}='dark'] [style*="color:#512DA8"] {
+        color: var(--txe-purple) !important;
       }
 
       /* Applicants filters separator line defaults to black; retint it for dark mode. */
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters line[stroke="black"],
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters line[stroke="#000"],
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters line[stroke="#000000"] {
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters line[stroke="black"],
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters line[stroke="#000"],
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters line[stroke="#000000"] {
         stroke: rgba(255, 255, 255, 0.20) !important;
         opacity: 1 !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .applicants-filters svg g[filter] {
+      html[${txe_THEME_ATTR}='dark'] .applicants-filters svg g[filter] {
         filter: none !important;
       }
 
       /* Spacers/dividers across the app (hr and similar). */
-      html[${COPILOT_THEME_ATTR}='dark'] hr {
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] hr {
+        border-color: var(--txe-border) !important;
         opacity: 1 !important;
       }
 
       /* DataTables sometimes uses its own header/footer borders. */
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable thead th,
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable thead td,
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable tfoot th,
-      html[${COPILOT_THEME_ATTR}='dark'] table.dataTable tfoot td {
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] table.dataTable thead th,
+      html[${txe_THEME_ATTR}='dark'] table.dataTable thead td,
+      html[${txe_THEME_ATTR}='dark'] table.dataTable tfoot th,
+      html[${txe_THEME_ATTR}='dark'] table.dataTable tfoot td {
+        border-color: var(--txe-border) !important;
       }
 
       /* FullCalendar: override its default CSS vars (it ships white defaults). */
-      html[${COPILOT_THEME_ATTR}='dark'] {
-        --fc-page-bg-color: var(--copilot-surface-2);
+      html[${txe_THEME_ATTR}='dark'] {
+        --fc-page-bg-color: var(--txe-surface-2);
         --fc-neutral-bg-color: rgba(255, 255, 255, 0.04);
-        --fc-neutral-text-color: var(--copilot-muted);
-        --fc-border-color: var(--copilot-border);
+        --fc-neutral-text-color: var(--txe-muted);
+        --fc-border-color: var(--txe-border);
 
-        --fc-button-text-color: var(--copilot-text);
-        --fc-button-bg-color: var(--copilot-surface);
+        --fc-button-text-color: var(--txe-text);
+        --fc-button-bg-color: var(--txe-surface);
         --fc-button-border-color: transparent;
-        --fc-button-hover-bg-color: var(--copilot-surface-2);
+        --fc-button-hover-bg-color: var(--txe-surface-2);
         --fc-button-hover-border-color: transparent;
-        --fc-button-active-bg-color: var(--copilot-surface-2);
+        --fc-button-active-bg-color: var(--txe-surface-2);
         --fc-button-active-border-color: transparent;
 
-        --fc-event-bg-color: var(--copilot-primary);
-        --fc-event-border-color: var(--copilot-primary);
-        --fc-event-text-color: var(--copilot-text);
+        --fc-event-bg-color: var(--txe-primary);
+        --fc-event-border-color: var(--txe-primary);
+        --fc-event-text-color: var(--txe-text);
         --fc-today-bg-color: rgba(61, 123, 255, 0.10);
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .fc,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc-theme-standard,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-scrollgrid-section-sticky > * {
-        background-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .fc,
+      html[${txe_THEME_ATTR}='dark'] .fc-theme-standard,
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-scrollgrid-section-sticky > * {
+        background-color: var(--txe-surface-2) !important;
       }
 
       /* DateRangePicker (daterangepicker) dark mode. */
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker:before,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker:after {
-        border-bottom-color: var(--copilot-surface-2) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker:before,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker:after {
+        border-bottom-color: var(--txe-surface-2) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .drp-calendar,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .calendar-table {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .drp-calendar,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .calendar-table {
         background-color: transparent !important;
         border-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .calendar-table table {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .calendar-table table {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker th,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker th,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td {
+        color: var(--txe-text) !important;
         border-color: transparent !important;
         background-color: transparent !important;
       }
 
       /* Some builds paint available day cells white; force them transparent in dark mode. */
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.available,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.available:hover {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.available,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.available:hover {
         background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.off,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.off.in-range,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.off.start-date,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.off.end-date,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.disabled,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker option.disabled {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.off,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.off.in-range,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.off.start-date,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.off.end-date,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.disabled,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker option.disabled {
         color: rgba(219, 228, 243, 0.40) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.available:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker th.available:hover {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.available:hover,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker th.available:hover {
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.in-range {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.in-range {
         background-color: rgba(61, 123, 255, 0.14) !important;
-        color: var(--copilot-text) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.active,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.active:hover,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.start-date,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker td.end-date {
-        background-color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.active,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.active:hover,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.start-date,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker td.end-date {
+        background-color: var(--txe-primary) !important;
         color: #ffffff !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .drp-buttons {
-        border-top: 1px solid var(--copilot-border) !important;
-        background-color: var(--copilot-surface) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .drp-buttons {
+        border-top: 1px solid var(--txe-border) !important;
+        background-color: var(--txe-surface) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .drp-selected {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .drp-selected {
+        color: var(--txe-muted) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .calendar-time select,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker select.hourselect,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker select.minuteselect,
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker select.ampmselect {
-        background-color: var(--copilot-surface-2) !important;
-        border: 1px solid var(--copilot-border) !important;
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .calendar-time select,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker select.hourselect,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker select.minuteselect,
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker select.ampmselect {
+        background-color: var(--txe-surface-2) !important;
+        border: 1px solid var(--txe-border) !important;
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .daterangepicker .ranges {
+      html[${txe_THEME_ATTR}='dark'] .daterangepicker .ranges {
         background-color: transparent !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .fc,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-toolbar-title,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc a {
-        color: var(--copilot-text) !important;
+      html[${txe_THEME_ATTR}='dark'] .fc,
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-toolbar-title,
+      html[${txe_THEME_ATTR}='dark'] .fc a {
+        color: var(--txe-text) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-button {
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-button {
         box-shadow: none !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-daygrid-day-number,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-col-header-cell-cushion {
-        color: var(--copilot-muted) !important;
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-daygrid-day-number,
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-col-header-cell-cushion {
+        color: var(--txe-muted) !important;
       }
 
       /* FullCalendar day cells can still render white frames in some themes. */
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-scrollgrid,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-scrollgrid-section > *,
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-daygrid-day-frame {
-        background-color: var(--copilot-surface-2) !important;
-        border-color: var(--copilot-border) !important;
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-scrollgrid,
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-scrollgrid-section > *,
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-daygrid-day-frame {
+        background-color: var(--txe-surface-2) !important;
+        border-color: var(--txe-border) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame {
+      html[${txe_THEME_ATTR}='dark'] .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame {
         background-color: rgba(61, 123, 255, 0.10) !important;
       }
 
       /* User-menu icon button (replaces username text in dark mode). */
-      html[${COPILOT_THEME_ATTR}='dark'] .copilot-user-menu-btn {
+      html[${txe_THEME_ATTR}='dark'] .txe-user-menu-btn {
         width: 34px;
         height: 34px;
         display: inline-flex;
@@ -1891,40 +1903,40 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         justify-content: center;
         border-radius: 999px;
         background: rgba(176, 172, 172, 0.08);
-        border: 1px solid var(--copilot-border);
+        border: 1px solid var(--txe-border);
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .copilot-user-menu-btn:hover {
+      html[${txe_THEME_ATTR}='dark'] .txe-user-menu-btn:hover {
         background: rgba(255, 255, 255, 0.12);
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .copilot-user-menu-btn svg {
+      html[${txe_THEME_ATTR}='dark'] .txe-user-menu-btn svg {
         width: 16px;
         height: 16px;
         fill: rgb(140 146 155);
         opacity: 0.92;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] .text-primary {
-        color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] .text-primary {
+        color: var(--txe-primary) !important;
       }
 
-      html[${COPILOT_THEME_ATTR}='dark'] a {
-        color: var(--copilot-primary) !important;
+      html[${txe_THEME_ATTR}='dark'] a {
+        color: var(--txe-primary) !important;
       }
     `;
     document.documentElement.appendChild(style);
   }
 
   const LEGACY_PURPLE_HEX = '#32325d';
-  const LEGACY_PURPLE_REPLACER_STYLE_ID = 'copilot-legacy-purple-replacements-style';
+  const LEGACY_PURPLE_REPLACER_STYLE_ID = 'txe-legacy-purple-replacements-style';
   let legacyPurpleReplacerInstalled = false;
   let legacyPurpleReplacerScheduled = false;
 
   function prefixSelectorForDarkMode(selector) {
     const sel = String(selector || '').trim();
     if (!sel) return '';
-    const scope = `html[${COPILOT_THEME_ATTR}='dark']`;
+    const scope = `html[${txe_THEME_ATTR}='dark']`;
     if (sel === ':root' || sel === 'html') return scope;
     if (sel.startsWith(scope)) return sel;
     return `${scope} ${sel}`;
@@ -1953,7 +1965,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
             .join(', ');
           if (!prefixedSelectors) continue;
 
-          const decls = styleText.replace(/#32325d\b/gi, 'var(--copilot-purple)');
+          const decls = styleText.replace(/#32325d\b/gi, 'var(--txe-purple)');
           out += `${prefixedSelectors} { ${decls} }\n`;
           continue;
         }
@@ -1987,14 +1999,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     let css = '';
 
     // Inline styles / SVG attributes that hardcode the legacy purple.
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [style*="${LEGACY_PURPLE_HEX}" i] { color: var(--copilot-purple) !important; }\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [style*="background:${LEGACY_PURPLE_HEX}" i],\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [style*="background-color:${LEGACY_PURPLE_HEX}" i] { background-color: var(--copilot-purple) !important; }\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [style*="border-color:${LEGACY_PURPLE_HEX}" i] { border-color: var(--copilot-purple) !important; }\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [fill="${LEGACY_PURPLE_HEX}"],\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [fill="${LEGACY_PURPLE_HEX.toUpperCase()}"],\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX}"],\n`;
-    css += `html[${COPILOT_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX.toUpperCase()}"] { fill: var(--copilot-purple) !important; stroke: var(--copilot-purple) !important; }\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [style*="${LEGACY_PURPLE_HEX}" i] { color: var(--txe-purple) !important; }\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [style*="background:${LEGACY_PURPLE_HEX}" i],\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [style*="background-color:${LEGACY_PURPLE_HEX}" i] { background-color: var(--txe-purple) !important; }\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [style*="border-color:${LEGACY_PURPLE_HEX}" i] { border-color: var(--txe-purple) !important; }\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [fill="${LEGACY_PURPLE_HEX}"],\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [fill="${LEGACY_PURPLE_HEX.toUpperCase()}"],\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX}"],\n`;
+    css += `html[${txe_THEME_ATTR}='dark'] [stroke="${LEGACY_PURPLE_HEX.toUpperCase()}"] { fill: var(--txe-purple) !important; stroke: var(--txe-purple) !important; }\n`;
 
     // Same-origin / readable CSSOM rules.
     const sheets = Array.from(document.styleSheets || []);
@@ -2066,7 +2078,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   function ensureNavbarUserIcon() {
     // Only apply this tweak in dark mode, since it is part of the dark-theme UX.
-    if ((document.documentElement.getAttribute(COPILOT_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
+    if ((document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
 
     const nav = document.querySelector('nav.navbar-top');
     if (!nav) return;
@@ -2075,10 +2087,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       'li.nav-item.dropdown a.nav-link[data-toggle="dropdown"], li.nav-item.dropdown a.nav-link[aria-haspopup="true"]'
     );
     if (!toggle) return;
-    if (toggle.getAttribute(COPILOT_USER_ICONIZED_ATTR) === '1') return;
+    if (toggle.getAttribute(txe_USER_ICONIZED_ATTR) === '1') return;
 
     const iconWrap = document.createElement('span');
-    iconWrap.className = 'copilot-user-menu-btn';
+    iconWrap.className = 'txe-user-menu-btn';
     iconWrap.setAttribute('aria-hidden', 'true');
     iconWrap.innerHTML = `
       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -2097,11 +2109,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     }
 
     toggle.setAttribute('aria-label', 'User menu');
-    toggle.setAttribute(COPILOT_USER_ICONIZED_ATTR, '1');
+    toggle.setAttribute(txe_USER_ICONIZED_ATTR, '1');
   }
 
-  const SIDENAV_FALLBACK_ATTR = 'data-copilot-sidenav-fallback';
-  const SIDENAV_STATE_KEY = 'copilot-sidenav-pinned';
+  const SIDENAV_FALLBACK_ATTR = 'data-txe-sidenav-fallback';
+  const SIDENAV_STATE_KEY = 'txe-sidenav-pinned';
 
   function readPersistedSidenavPinned() {
     try {
@@ -2258,11 +2270,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   async function ensureWhiteBrandLogo() {
-    if ((document.documentElement.getAttribute(COPILOT_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
+    if ((document.documentElement.getAttribute(txe_THEME_ATTR) || getStoredTheme()) !== 'dark') return;
 
     const img = document.querySelector('img.navbar-brand-img');
     if (!img) return;
-    if (img.getAttribute('data-copilot-logo') === '1') return;
+    if (img.getAttribute('data-txe-logo') === '1') return;
 
     const src = img.currentSrc || img.src;
     if (!src || !/logo-taxe\.svg/i.test(src)) return;
@@ -2275,7 +2287,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
             return;
           }
 
-          chrome.runtime.sendMessage({ type: 'COPILOT_FETCH_TEXT', url }, (resp) => {
+          chrome.runtime.sendMessage({ type: 'txe_FETCH_TEXT', url }, (resp) => {
             const err = chrome.runtime.lastError;
             if (err) {
               reject(new Error(String(err.message || err)));
@@ -2323,11 +2335,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       const serialized = new XMLSerializer().serializeToString(svg);
       const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
       img.src = dataUri;
-      img.setAttribute('data-copilot-logo', '1');
+      img.setAttribute('data-txe-logo', '1');
     } catch (e) {
       // Fallback: at least make it visible in dark mode.
       img.style.filter = 'brightness(0) invert(1)';
-      img.setAttribute('data-copilot-logo', '1');
+      img.setAttribute('data-txe-logo', '1');
     }
   }
 
@@ -2399,7 +2411,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
             // Remove hover tooltip entirely.
             leadSpan.removeAttribute('title');
             // Store pretty value in case you want it later (no hover).
-            leadSpan.setAttribute('data-copilot-years', pretty);
+            leadSpan.setAttribute('data-txe-years', pretty);
           }
           leadSpan.setAttribute(LEAD_YEARS_FORMATTED_ATTR, '1');
         }
@@ -2685,11 +2697,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         if (hadDE) {
           flag.setAttribute('data-flag', 'de');
           flag.setAttribute('aria-label', 'Germany');
-          setCopilotTooltip(flag, 'Germany');
+          settxeTooltip(flag, 'Germany');
         } else {
           flag.setAttribute('data-flag', 'nl');
           flag.setAttribute('aria-label', 'Netherlands');
-          setCopilotTooltip(flag, 'Netherlands');
+          settxeTooltip(flag, 'Netherlands');
         }
         leadCellSpan.insertBefore(flag, leadCellSpan.firstChild);
         leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
@@ -2979,7 +2991,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       try {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
           chrome.runtime.sendMessage({
-            type: 'COPILOT_LEAD_STATUS_CHANGED',
+            type: 'txe_LEAD_STATUS_CHANGED',
             leadId: String(leadId),
             status: String(status || ''),
             url: String(window.location.href || ''),
@@ -3244,13 +3256,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (motivIdx < 0) return;
 
     const header = headers[motivIdx];
-    if (header && header.classList) header.classList.add('copilot-motiv-col');
+    if (header && header.classList) header.classList.add('txe-motiv-col');
 
     const rows = Array.from(table.querySelectorAll('tbody tr'));
     for (const row of rows) {
       const cells = Array.from(row.querySelectorAll('td'));
       const cell = cells[motivIdx];
-      if (cell && cell.classList) cell.classList.add('copilot-motiv-col');
+      if (cell && cell.classList) cell.classList.add('txe-motiv-col');
     }
   }
 
@@ -3301,19 +3313,19 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (sidebar) {
       // The site sets an inline background with '!important', so we must override inline.
       try {
-        sidebar.style.setProperty('background', 'var(--copilot-surface)', 'important');
+        sidebar.style.setProperty('background', 'var(--txe-surface)', 'important');
       } catch {
       }
 
       try {
         const header = sidebar.querySelector('.card-header');
-        if (header) header.style.setProperty('background', 'var(--copilot-surface)', 'important');
+        if (header) header.style.setProperty('background', 'var(--txe-surface)', 'important');
       } catch {
       }
 
       try {
         const footer = sidebar.querySelector('.card-footer');
-        if (footer) footer.style.setProperty('background', 'var(--copilot-surface)', 'important');
+        if (footer) footer.style.setProperty('background', 'var(--txe-surface)', 'important');
       } catch {
       }
     }
@@ -3634,14 +3646,14 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     })();
 
     // Phones use a dedicated tooltip system (not the generic one) to avoid flicker.
-    target.classList.remove('border', 'border-danger', 'rounded', 'px-1', 'copilot-bad-phone');
+    target.classList.remove('border', 'border-danger', 'rounded', 'px-1', 'txe-bad-phone');
     try {
-      target.removeAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR);
+      target.removeAttribute(txe_BAD_PHONE_TOOLTIP_TEXT_ATTR);
     } catch {
     }
 
     if (!validation.ok) {
-      target.classList.add('border', 'border-danger', 'rounded', 'px-1', 'copilot-bad-phone');
+      target.classList.add('border', 'border-danger', 'rounded', 'px-1', 'txe-bad-phone');
 
       const parts = [...(validation.errors || [])];
       const uniqueSuggestions = Array.from(
@@ -3662,7 +3674,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
       const msg = parts.filter(Boolean).join('\n');
       try {
-        target.setAttribute(COPILOT_BAD_PHONE_TOOLTIP_TEXT_ATTR, msg);
+        target.setAttribute(txe_BAD_PHONE_TOOLTIP_TEXT_ATTR, msg);
       } catch {
       }
     }
@@ -3769,47 +3781,32 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function addCountryRow() {
-    const country = detectCountry();
-    if (!country) return;
+    // Find and enhance the native country element
+    const nativeCountrySpan = document.querySelector('#sessionObject_session_status, #edit-session span.session-status');
+    if (!nativeCountrySpan) return;
 
-    const typeSpan = Array.from(document.querySelectorAll('#edit-session span.session-status')).find((el) => {
-      const t = ws(el.textContent).toLowerCase();
-      return t.startsWith('type:') || t.includes('type:');
-    });
-    if (!typeSpan) return;
+    const text = String(nativeCountrySpan.textContent || '');
+    if (!/country:/i.test(text)) return;
 
-    const typeRow = typeSpan.closest('.d-flex') || typeSpan.parentElement;
-    if (!typeRow || !typeRow.parentElement) return;
+    // Mark as processed to avoid re-running
+    if (nativeCountrySpan.getAttribute('data-txe-country-enhanced') === '1') return;
+    nativeCountrySpan.setAttribute('data-txe-country-enhanced', '1');
 
-    const existing = typeRow.parentElement.querySelector(`.${COUNTRY_ROW_CLASS}`);
-    if (existing) {
-      const valueEl = existing.querySelector('[data-copilot-country-value]');
-      if (valueEl) valueEl.textContent = country;
-      return;
+    // Replace DE with Germany, NL with Netherlands
+    let enhanced = text;
+    enhanced = enhanced.replace(/\bDE\b/g, 'Germany');
+    enhanced = enhanced.replace(/\bNL\b/g, 'Netherlands');
+
+    if (enhanced !== text) {
+      nativeCountrySpan.innerHTML = enhanced.replace(
+        /(Country:)\s*(\w+)/i,
+        '<b>$1</b> $2'
+      );
     }
-
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'd-flex';
-
-    const span = document.createElement('span');
-    span.className = `session-status ${COUNTRY_ROW_CLASS}`;
-
-    const b = document.createElement('b');
-    b.textContent = 'Country: ';
-
-    const value = document.createElement('span');
-    value.setAttribute('data-copilot-country-value', '1');
-    value.textContent = ` ${country}`;
-
-    span.appendChild(b);
-    span.appendChild(value);
-    rowDiv.appendChild(span);
-
-    typeRow.insertAdjacentElement('afterend', rowDiv);
   }
 
-  const TARGET_SORT_KEYS = new Set(['utm_source', 'last_step', 'step']);
-  const TARGET_TITLES = new Set(['utm source', 'last step change', 'step']);
+  const TARGET_SORT_KEYS = new Set(['utm_source', 'last_step']);
+  const TARGET_TITLES = new Set(['utm source', 'last step change']);
 
   function headerCellMatches(cell) {
     const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
@@ -4025,46 +4022,54 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     }
   }
 
-  function replaceEyeWithOpenButton(candidateTables) {
+  function enhanceNativeOpenButtons(candidateTables) {
     loadOpenedLeadIdsOnce();
 
     const tables = candidateTables || findCandidateTables();
     if (!tables.length) return;
 
     for (const table of tables) {
+      // Find native "Open" buttons/links added by the dashboard
       const tds = table.querySelectorAll(`tbody td.text-center:not([${OPEN_BUTTON_REPLACED_ATTR}="1"])`);
       for (const td of tds) {
-        const link = td.querySelector('a[href]');
-        if (!link) continue;
+        // Look for the native Open button (could be <a> or <button>)
+        const btn = td.querySelector('a[href*="/leads/"].btn, button[onclick*="leads"]');
+        if (!btn) continue;
 
-        const href = link.getAttribute('href');
-        if (!looksLikeLeadDetailsHref(href)) continue;
+        // Extract href from <a> or onclick from <button>
+        let href = btn.getAttribute('href');
+        if (!href) {
+          const onclick = btn.getAttribute('onclick') || '';
+          const match = onclick.match(/\/leads\/\d+/);
+          if (match) href = match[0];
+        }
+        if (!href || !looksLikeLeadDetailsHref(href)) continue;
 
         const leadId = extractLeadIdFromHref(href);
+        if (!leadId) continue;
 
-        const hasEyeIcon =
-          !!td.querySelector('i.fa-eye, i.fas.fa-eye, i.fa.fa-eye, i[class*="fa-eye"], svg[data-icon="eye"]');
-        if (!hasEyeIcon) continue;
-
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-primary btn-sm';
-        btn.type = 'button';
-        btn.textContent = 'Open';
+        // Mark and enhance the native button
         btn.setAttribute(OPEN_BTN_ATTR, '1');
-        if (leadId) btn.setAttribute(OPEN_BTN_LEAD_ID_ATTR, leadId);
-        if (leadId && openedLeadIds.has(String(leadId))) {
+        btn.setAttribute(OPEN_BTN_LEAD_ID_ATTR, leadId);
+
+        // Apply "Opened" styling if already opened
+        if (openedLeadIds.has(String(leadId))) {
           setOpenedButtonUI(btn);
         }
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
 
-          if (leadId) markLeadAsOpened(leadId, btn);
-          window.open(href, '_blank');
-        });
+        // Intercept click to track opened state and force new tab
+        const originalHref = href;
+        btn.addEventListener(
+          'click',
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (leadId) markLeadAsOpened(leadId, btn);
+            window.open(originalHref, '_blank');
+          },
+          true
+        );
 
-        link.style.display = 'none';
-        td.appendChild(btn);
         td.setAttribute(OPEN_BUTTON_REPLACED_ATTR, '1');
       }
     }
@@ -4093,7 +4098,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (isLeadsListPage()) {
       const candidateTables = findCandidateTables();
       hideColumnsInDataTables(candidateTables);
-      replaceEyeWithOpenButton(candidateTables);
+      enhanceNativeOpenButtons(candidateTables);
       ensureLeadsFlagsObserver(candidateTables);
       replaceLeadIdCountryEmojiWithFlags(candidateTables);
       removeLeadIdYearsHoverAndBeautify(candidateTables);
