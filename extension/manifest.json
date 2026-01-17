@@ -28,7 +28,7 @@
         "https://taxe.amdav.ro/*"
       ],
       "js": ["content.bundle.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }

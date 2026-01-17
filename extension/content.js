@@ -27,6 +27,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const LEAD_FLAG_REPLACED_ATTR = 'data-txe-lead-flag-replaced';
   const LEAD_FLAG_CLASS = 'txe-lead-flag';
   const LEAD_YEARS_FORMATTED_ATTR = 'data-txe-years-formatted';
+  const ACTION_COLUMN_MOVED_ATTR = 'data-txe-action-moved';
+  const ACTION_COLUMN_MOVED_VERSION = '1';
+  const LEAD_FLAGS_INITIALIZED_ATTR = 'data-txe-lead-flags-initialized';
+  const INLINE_FLAG_STYLED_ATTR = 'data-txe-inline-flag-styled';
 
   const LEAD_FLAGS_OBSERVER_ATTR = 'data-txe-lead-flags-observer';
   const leadFlagsObserverByTable = new WeakMap();
@@ -51,12 +55,40 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const statusColumnIndexCache = new WeakMap();
   let stylesAndThemeApplied = false;
   let hostWhitelisted = ALLOWED_HOSTS.has(window.location.hostname);
+  let domReady = document.readyState !== 'loading';
+  let domReadyListenerAttached = false;
+  let earlyThemeApplied = false;
 
 
 
   function ws(s) {
     return String(s || '').replace(/\s+/g, ' ').trim();
   }
+
+  const deferNonCritical = (() => {
+    const idle = typeof requestIdleCallback === 'function' ? requestIdleCallback : null;
+    return (fn) => {
+      if (typeof fn !== 'function') return;
+      if (idle) {
+        idle(
+          () => {
+            try {
+              fn();
+            } catch {
+            }
+          },
+          { timeout: 1500 }
+        );
+        return;
+      }
+      setTimeout(() => {
+        try {
+          fn();
+        } catch {
+        }
+      }, 200);
+    };
+  })();
 
   const txe_TOOLTIP_ID = 'txe-tooltip-bubble';
   const txe_TOOLTIP_TEXT_ATTR = 'data-txe-tooltip';
@@ -73,11 +105,45 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const txe_THEME_STORAGE_KEY = 'txe_dashboard_theme_v1';
   const txe_THEME_TOGGLE_ID = 'txe-theme-toggle';
   const txe_THEME_TOGGLE_BTN_ID = 'txe-theme-toggle-btn';
+  const txe_EARLY_THEME_STYLE_ID = 'txe-early-theme-style';
 
   const txe_USER_ICONIZED_ATTR = 'data-txe-user-iconized';
 
   let storedThemeCache = null;
   let storedThemeLoadPromise = null;
+
+  function applyThemeEarly() {
+    if (earlyThemeApplied) return;
+    earlyThemeApplied = true;
+    try {
+      const v = String(localStorage.getItem(txe_THEME_STORAGE_KEY) || '').toLowerCase();
+      if (v === 'dark' || v === 'light') {
+        document.documentElement.setAttribute(txe_THEME_ATTR, v);
+
+        if (!document.getElementById(txe_EARLY_THEME_STYLE_ID)) {
+          const style = document.createElement('style');
+          style.id = txe_EARLY_THEME_STYLE_ID;
+          style.textContent = `
+            html[${txe_THEME_ATTR}='dark'],
+            html[${txe_THEME_ATTR}='dark'] body {
+              background-color: #1b2432 !important;
+              color: #dbe4f3 !important;
+            }
+            html[${txe_THEME_ATTR}='light'],
+            html[${txe_THEME_ATTR}='light'] body {
+              background-color: #ffffff !important;
+              color: #212529 !important;
+            }
+          `;
+          const target = document.head || document.documentElement;
+          if (target) target.appendChild(style);
+        }
+      }
+    } catch {
+    }
+  }
+
+  applyThemeEarly();
 
   function loadStoredThemeOnce() {
     if (storedThemeLoadPromise) return storedThemeLoadPromise;
@@ -242,6 +308,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     txeTooltipListenersInstalled = true;
 
     let activeTooltipTarget = null;
+    let tooltipUpdateScheduled = false;
+
+    const scheduleTooltipUpdate = () => {
+      if (!activeTooltipTarget) return;
+      if (tooltipUpdateScheduled) return;
+      tooltipUpdateScheduled = true;
+      requestAnimationFrame(() => {
+        tooltipUpdateScheduled = false;
+        if (activeTooltipTarget) showtxeTooltipFor(activeTooltipTarget);
+      });
+    };
 
     const findTooltipTarget = (node, evt) => {
       try {
@@ -281,7 +358,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         activeTooltipTarget = target;
         showtxeTooltipFor(activeTooltipTarget);
       },
-      true
+      { capture: true, passive: true }
     );
 
     document.addEventListener(
@@ -301,20 +378,16 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         activeTooltipTarget = null;
         hidetxeTooltip();
       },
-      true
+      { capture: true, passive: true }
     );
 
     window.addEventListener(
       'scroll',
-      () => {
-        if (activeTooltipTarget) showtxeTooltipFor(activeTooltipTarget);
-      },
-      true
+      scheduleTooltipUpdate,
+      { capture: true, passive: true }
     );
 
-    window.addEventListener('resize', () => {
-      if (activeTooltipTarget) showtxeTooltipFor(activeTooltipTarget);
-    });
+    window.addEventListener('resize', scheduleTooltipUpdate, { passive: true });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -401,16 +474,27 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (badPhoneTooltipListenersInstalled) return;
     badPhoneTooltipListenersInstalled = true;
 
-    document.addEventListener(
-      'mousemove',
-      (e) => {
+    let mouseMoveScheduled = false;
+    let lastMouseEvent = null;
+
+    const handleMouseMove = (e) => {
+      lastMouseEvent = e;
+      if (mouseMoveScheduled) return;
+      mouseMoveScheduled = true;
+      requestAnimationFrame(() => {
+        mouseMoveScheduled = false;
+
+        const evt = lastMouseEvent;
+        if (!evt) return;
+
         let under = null;
         try {
-          under = document.elementFromPoint(e.clientX, e.clientY);
+          under = document.elementFromPoint(evt.clientX, evt.clientY);
         } catch {
         }
 
-        const hovered = under && under.closest ? under.closest(`.txe-bad-phone[${txe_BAD_PHONE_TOOLTIP_TEXT_ATTR}]`) : null;
+        const hovered =
+          under && under.closest ? under.closest(`.txe-bad-phone[${txe_BAD_PHONE_TOOLTIP_TEXT_ATTR}]`) : null;
         if (hovered === activeBadPhoneEl) return;
 
         activeBadPhoneEl = hovered;
@@ -419,21 +503,33 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         } else {
           showBadPhoneTooltipFor(activeBadPhoneEl);
         }
-      },
-      true
+      });
+    };
+
+    document.addEventListener(
+      'mousemove',
+      handleMouseMove,
+      { capture: true, passive: true }
     );
+
+    let tooltipUpdateScheduled = false;
+    const scheduleTooltipUpdate = () => {
+      if (!activeBadPhoneEl) return;
+      if (tooltipUpdateScheduled) return;
+      tooltipUpdateScheduled = true;
+      requestAnimationFrame(() => {
+        tooltipUpdateScheduled = false;
+        if (activeBadPhoneEl) positionBadPhoneTooltipFor(activeBadPhoneEl);
+      });
+    };
 
     window.addEventListener(
       'scroll',
-      () => {
-        if (activeBadPhoneEl) positionBadPhoneTooltipFor(activeBadPhoneEl);
-      },
-      true
+      scheduleTooltipUpdate,
+      { capture: true, passive: true }
     );
 
-    window.addEventListener('resize', () => {
-      if (activeBadPhoneEl) positionBadPhoneTooltipFor(activeBadPhoneEl);
-    });
+    window.addEventListener('resize', scheduleTooltipUpdate, { passive: true });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -559,6 +655,22 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         background-repeat: no-repeat;
         background-size: contain;
         background-position: center;
+      }
+
+      svg.txe-inline-flag {
+        width: 18px !important;
+        height: 12px !important;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 0;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+
+      .txe-inline-flag-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
 
       .${LEAD_FLAG_CLASS}[data-flag="de"] {
@@ -2462,6 +2574,41 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       return { hadDE, hadNL };
     };
 
+    const detectCountryFromInlineSvg = (container) => {
+      let hadDE = false;
+      let hadNL = false;
+      let hasInlineFlag = false;
+      if (!container || !container.querySelectorAll) return { hadDE, hadNL, hasInlineFlag };
+
+      const svgs = Array.from(container.querySelectorAll('svg'));
+      for (const svg of svgs) {
+        try {
+          const rects = Array.from(svg.querySelectorAll('rect'));
+          if (!rects.length) continue;
+
+          const fills = rects
+            .map((r) => String(r.getAttribute('fill') || '').trim().toLowerCase())
+            .filter(Boolean);
+
+          const hasDE = fills.includes('#000000') && fills.includes('#dd0000') && fills.includes('#ffce00');
+          const hasNL = fills.includes('#ae1c28') && fills.includes('#ffffff') && fills.includes('#21468b');
+
+          if (hasDE || hasNL) {
+            hadDE = hadDE || hasDE;
+            hadNL = hadNL || hasNL;
+            hasInlineFlag = true;
+
+            if (container && container.classList) container.classList.add('txe-inline-flag-wrap');
+            svg.classList.add('txe-inline-flag');
+            svg.setAttribute('aria-hidden', 'true');
+          }
+        } catch {
+        }
+      }
+
+      return { hadDE, hadNL, hasInlineFlag };
+    };
+
     const trimLeadingWhitespaceText = (container) => {
       try {
         const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
@@ -2551,6 +2698,21 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         const fromRowAttrs = detectCountryFromAttributes(row);
         hadDE = hadDE || !!fromRowAttrs.hadDE;
         hadNL = hadNL || !!fromRowAttrs.hadNL;
+
+        
+        const fromInlineSvg = detectCountryFromInlineSvg(leadCellSpan);
+        hadDE = hadDE || !!fromInlineSvg.hadDE;
+        hadNL = hadNL || !!fromInlineSvg.hadNL;
+        if (fromInlineSvg.hasInlineFlag) {
+          try {
+            if (leadCellSpan.querySelectorAll) {
+              leadCellSpan.querySelectorAll(`.${LEAD_FLAG_CLASS}`).forEach((n) => n.remove());
+            }
+          } catch {
+          }
+          leadCellSpan.setAttribute(LEAD_FLAG_REPLACED_ATTR, '1');
+          continue;
+        }
 
         
         const fromText = stripCountryEmojiFromTextNodes(leadCellSpan);
@@ -2652,6 +2814,51 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     }
   }
 
+  function styleInlineLeadFlags(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    const isInlineFlagSvg = (svg) => {
+      if (!svg || !svg.querySelectorAll) return false;
+      try {
+        if (svg.closest && svg.closest(`.${LEAD_FLAG_CLASS}`)) return false;
+        const rects = Array.from(svg.querySelectorAll('rect'));
+        if (!rects.length) return false;
+        const fills = rects
+          .map((r) => String(r.getAttribute('fill') || '').trim().toLowerCase())
+          .filter(Boolean);
+        const hasDE = fills.includes('#000000') && fills.includes('#dd0000') && fills.includes('#ffce00');
+        const hasNL = fills.includes('#ae1c28') && fills.includes('#ffffff') && fills.includes('#21468b');
+        return hasDE || hasNL;
+      } catch {
+        return false;
+      }
+    };
+
+    for (const table of tables) {
+      const rows = table.querySelectorAll('tbody tr');
+      if (!rows.length) continue;
+      for (const row of rows) {
+        const leadCellSpan =
+          row.querySelector('td.sorting_1 span') ||
+          row.querySelector('td.sorting_1') ||
+          row.querySelector('td:first-child span') ||
+          row.querySelector('td:first-child');
+        if (!leadCellSpan || !leadCellSpan.querySelectorAll) continue;
+
+        const svgs = Array.from(leadCellSpan.querySelectorAll('svg'));
+        for (const svg of svgs) {
+          if (!isInlineFlagSvg(svg)) continue;
+          if (svg.getAttribute(INLINE_FLAG_STYLED_ATTR) === '1') continue;
+          svg.classList.add('txe-inline-flag');
+          svg.setAttribute('aria-hidden', 'true');
+          svg.setAttribute(INLINE_FLAG_STYLED_ATTR, '1');
+          if (leadCellSpan.classList) leadCellSpan.classList.add('txe-inline-flag-wrap');
+        }
+      }
+    }
+  }
+
   function ensureLeadsFlagsObserver(candidateTables) {
     const tables = candidateTables || findCandidateTables();
     if (!tables.length) return;
@@ -2666,9 +2873,19 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
     for (const table of tables) {
       if (!table || !table.setAttribute) continue;
-      if (table.getAttribute(LEAD_FLAGS_OBSERVER_ATTR) === '1') continue;
+      if (table.getAttribute(LEAD_FLAGS_OBSERVER_ATTR) === '1') {
+        if (table.getAttribute(LEAD_FLAGS_INITIALIZED_ATTR) !== '1') {
+          replaceLeadIdCountryEmojiWithFlags([table]);
+          table.setAttribute(LEAD_FLAGS_INITIALIZED_ATTR, '1');
+        }
+        continue;
+      }
       if (leadFlagsObserverByTable.has(table)) {
         table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, '1');
+        if (table.getAttribute(LEAD_FLAGS_INITIALIZED_ATTR) !== '1') {
+          replaceLeadIdCountryEmojiWithFlags([table]);
+          table.setAttribute(LEAD_FLAGS_INITIALIZED_ATTR, '1');
+        }
         continue;
       }
 
@@ -2745,6 +2962,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         leadFlagsObserverByTable.set(table, mo);
         table.setAttribute(LEAD_FLAGS_OBSERVER_ATTR, '1');
       } catch {
+      }
+
+      if (table.getAttribute(LEAD_FLAGS_INITIALIZED_ATTR) !== '1') {
+        replaceLeadIdCountryEmojiWithFlags([table]);
+        table.setAttribute(LEAD_FLAGS_INITIALIZED_ATTR, '1');
       }
     }
   }
@@ -2937,7 +3159,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       try {
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
           chrome.runtime.sendMessage({
-            type: 'COPILOT_LEAD_STATUS_CHANGED',
+            type: 'TXE_LEAD_STATUS_CHANGED',
             leadId: String(leadId),
             status: String(status || ''),
             url: String(window.location.href || ''),
@@ -3738,7 +3960,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     for (const hr of headerRows) {
       const cells = Array.from(hr.querySelectorAll('th, td'));
       for (const idx of indicesToRemove) {
-        if (idx >= 0 && idx < cells.length) cells[idx].classList.add(HIDDEN_COL_CLASS);
+        if (idx >= 0 && idx < cells.length) {
+          cells[idx].classList.add(HIDDEN_COL_CLASS);
+          try {
+            cells[idx].style.display = 'none';
+          } catch {
+          }
+        }
       }
     }
 
@@ -3746,7 +3974,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     for (const row of bodyRows) {
       const cells = Array.from(row.querySelectorAll('td, th'));
       for (const idx of indicesToRemove) {
-        if (idx >= 0 && idx < cells.length) cells[idx].classList.add(HIDDEN_COL_CLASS);
+        if (idx >= 0 && idx < cells.length) {
+          cells[idx].classList.add(HIDDEN_COL_CLASS);
+          try {
+            cells[idx].style.display = 'none';
+          } catch {
+          }
+        }
       }
     }
   }
@@ -3784,6 +4018,184 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       for (const t of relatedTables) {
         removeColumnsFromSingleTable(t, indicesToRemove);
       }
+    }
+  }
+
+  function isYearsHeaderCell(cell) {
+    if (!cell) return false;
+    const text = ws(cell.textContent).toLowerCase();
+    const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
+    const titleAttr = ws(cell.getAttribute('title') || '').toLowerCase();
+    const ariaLabel = ws(cell.getAttribute('aria-label') || '').toLowerCase();
+    return text === 'years' || text === 'year' || dataSort === 'years' || titleAttr === 'years' || ariaLabel === 'years';
+  }
+
+  function isActionHeaderCell(cell) {
+    if (!cell) return false;
+    const text = ws(cell.textContent).toLowerCase();
+    const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
+    const titleAttr = ws(cell.getAttribute('title') || '').toLowerCase();
+    const ariaLabel = ws(cell.getAttribute('aria-label') || '').toLowerCase();
+    return text === 'action' || text === 'actions' || dataSort === 'action' || titleAttr === 'action' || ariaLabel === 'action' || ariaLabel === 'actions';
+  }
+
+  function findColumnIndexByHeader(table, predicate) {
+    if (!table || typeof predicate !== 'function') return -1;
+    const headerRow = getHeaderRow(table);
+    if (!headerRow) return -1;
+
+    const headerCells = Array.from(headerRow.querySelectorAll('th, td'));
+    for (let i = 0; i < headerCells.length; i++) {
+      if (predicate(headerCells[i])) return i;
+    }
+    return -1;
+  }
+
+  function moveColumnCells(rows, fromIdx, toIdx) {
+    for (const row of rows) {
+      const cells = Array.from(row.querySelectorAll('th, td'));
+      if (!cells.length) continue;
+      if (fromIdx < 0 || fromIdx >= cells.length) continue;
+
+      let targetIdx = Math.max(0, Math.min(toIdx, cells.length));
+      if (fromIdx < targetIdx) targetIdx--;
+
+      const cell = cells[fromIdx];
+      if (!cell || !cell.parentElement) continue;
+
+      const parent = cell.parentElement;
+      parent.removeChild(cell);
+
+      const refreshed = Array.from(row.querySelectorAll('th, td'));
+      if (targetIdx >= 0 && targetIdx < refreshed.length) {
+        parent.insertBefore(cell, refreshed[targetIdx]);
+      } else {
+        parent.appendChild(cell);
+      }
+    }
+  }
+
+  function moveColumnWithinTable(table, fromIdx, toIdx) {
+    if (!table) return;
+    if (fromIdx === toIdx) return;
+
+    const headerRows = Array.from(table.querySelectorAll('thead tr'));
+    const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+    const footerRows = Array.from(table.querySelectorAll('tfoot tr'));
+
+    moveColumnCells(headerRows, fromIdx, toIdx);
+    moveColumnCells(bodyRows, fromIdx, toIdx);
+    moveColumnCells(footerRows, fromIdx, toIdx);
+  }
+
+  function findActionCellIndexInRow(row) {
+    if (!row) return -1;
+    const cells = Array.from(row.querySelectorAll('td, th'));
+    if (!cells.length) return -1;
+
+    const selectors = [
+      `button[${OPEN_BTN_ATTR}="1"]`,
+      'a[href*="/leads/"].btn',
+      'button[onclick*="leads"]'
+    ];
+
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      try {
+        if (cell.querySelector && selectors.some((sel) => cell.querySelector(sel))) return i;
+      } catch {
+      }
+    }
+
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      try {
+        const candidate = cell.querySelector && cell.querySelector('button, a.btn, a');
+        if (!candidate) continue;
+        const text = ws(candidate.textContent).toLowerCase();
+        if (text === 'open' || text === 'opened') return i;
+      } catch {
+      }
+    }
+    return -1;
+  }
+
+  function moveActionCellsToEnd(table) {
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    if (!rows.length) return;
+
+    for (const row of rows) {
+      const cells = Array.from(row.querySelectorAll('td, th'));
+      if (!cells.length) continue;
+      const actionIdx = findActionCellIndexInRow(row);
+      if (actionIdx < 0 || actionIdx === cells.length - 1) continue;
+
+      const cell = cells[actionIdx];
+      if (!cell || !cell.parentElement) continue;
+      const parent = cell.parentElement;
+      parent.removeChild(cell);
+      parent.appendChild(cell);
+    }
+  }
+
+  function getActionCellIndexFromRow(row) {
+    if (!row) return -1;
+    const cells = Array.from(row.querySelectorAll('td, th'));
+    if (!cells.length) return -1;
+    return findActionCellIndexInRow(row);
+  }
+
+  function rowNeedsActionMove(row) {
+    if (!row) return false;
+    const cells = Array.from(row.querySelectorAll('td, th'));
+    if (!cells.length) return false;
+    const actionIdx = getActionCellIndexFromRow(row);
+    return actionIdx >= 0 && actionIdx !== cells.length - 1;
+  }
+
+  function moveActionColumnAfterYears(candidateTables) {
+    const tables = candidateTables || findCandidateTables();
+    if (!tables.length) return;
+
+    for (const baseTable of tables) {
+      if (!baseTable) continue;
+      const hasMovedAttr = baseTable.getAttribute(ACTION_COLUMN_MOVED_ATTR) === ACTION_COLUMN_MOVED_VERSION;
+      const firstRow = baseTable.querySelector('tbody tr');
+      const needsActionFix = firstRow ? rowNeedsActionMove(firstRow) : false;
+      if (hasMovedAttr && !needsActionFix) continue;
+
+      const wrapper = baseTable.closest('.dataTables_wrapper') || baseTable.parentElement;
+      const relatedTables = new Set([baseTable]);
+      if (wrapper) {
+        for (const t of Array.from(wrapper.querySelectorAll('table'))) relatedTables.add(t);
+      }
+
+      for (const t of relatedTables) {
+        const headerRow = getHeaderRow(t);
+        if (headerRow) {
+          const headerCells = Array.from(headerRow.querySelectorAll('th, td'));
+          if (headerCells.length) {
+            const actionIdx = headerCells.findIndex(isActionHeaderCell);
+            const yearsIdx = headerCells.findIndex(isYearsHeaderCell);
+
+            if (actionIdx >= 0 && yearsIdx >= 0) {
+              const targetIdx = headerCells.length;
+              if (actionIdx !== headerCells.length - 1) {
+                moveColumnWithinTable(t, actionIdx, targetIdx);
+                statusColumnIndexCache.delete(t);
+              } else {
+                moveActionCellsToEnd(t);
+              }
+              continue;
+            }
+          }
+        }
+
+        moveActionCellsToEnd(t);
+      }
+
+      baseTable.setAttribute(ACTION_COLUMN_MOVED_ATTR, ACTION_COLUMN_MOVED_VERSION);
     }
   }
 
@@ -3967,6 +4379,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   function applyAll() {
     if (!hostWhitelisted) return;
 
+    if (!domReady) {
+      if (!domReadyListenerAttached) {
+        domReadyListenerAttached = true;
+        document.addEventListener('DOMContentLoaded', () => {
+          domReady = true;
+          applyAll();
+        }, { once: true, passive: true });
+      }
+      return;
+    }
+
     if (!stylesAndThemeApplied) {
       stylesAndThemeApplied = true;
       ensureStyles();
@@ -3975,11 +4398,13 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       loadStoredThemeOnce().then((v) => {
         if (v === 'dark' || v === 'light') applyTheme(v);
       });
-      ensureLegacyPurpleReplacements();
-      ensureThemeToggle();
-      ensureWhiteBrandLogo();
-      ensureNavbarUserIcon();
-      ensureSidenavToggleFallback();
+      deferNonCritical(() => {
+        ensureLegacyPurpleReplacements();
+        ensureThemeToggle();
+        ensureWhiteBrandLogo();
+        ensureNavbarUserIcon();
+        ensureSidenavToggleFallback();
+      });
     }
 
     if (isPrecalcsListPage()) {
@@ -3990,10 +4415,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
     if (isLeadsListPage()) {
       const candidateTables = findCandidateTables();
+      moveActionColumnAfterYears(candidateTables);
       hideColumnsInDataTables(candidateTables);
       enhanceNativeOpenButtons(candidateTables);
       ensureLeadsFlagsObserver(candidateTables);
-      replaceLeadIdCountryEmojiWithFlags(candidateTables);
+      styleInlineLeadFlags(candidateTables);
       removeLeadIdYearsHoverAndBeautify(candidateTables);
       setupLeadsListLiveStatusUpdates(candidateTables);
       adjustDataTablesSizing();
