@@ -1,27 +1,8 @@
 {
   "version": 1,
-  "liveCount": 26,
+  "liveCount": 1,
   "countedLeadIds": {
-    "234585": true,
-    "235638": true,
-    "235647": true,
-    "235649": true,
-    "235653": true,
-    "235656": true,
-    "235680": true,
-    "235691": true,
-    "235698": true,
-    "235705": true,
-    "235710": true,
-    "235712": true,
-    "235724": true,
-    "235725": true,
-    "235730": true,
-    "235733": true,
-    "235734": true,
-    "235735": true,
-    "235749": true,
-    "235750": true
+    "234695": true
   },
-  "updatedAt": "2026-01-16T13:16:09.870Z"
+  "updatedAt": "2026-01-19T13:15:01.167Z"
 }

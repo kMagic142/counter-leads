@@ -5,6 +5,8 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const ALLOWED_HOSTS = new Set(['dashboard.taxe.ro', 'taxe.amdav.ro']);
 
   const HIDDEN_COL_CLASS = 'txe-hidden-dt-col';
+  const SHOULD_HIDE_COL_ATTR = 'data-txe-should-hide';
+  const COLUMNS_HIDDEN_ATTR = 'data-txe-cols-hidden';
   const OPEN_BUTTON_REPLACED_ATTR = 'data-txe-open-replaced';
   const DETAILS_PAIRED_ATTR = 'data-txe-details-paired';
   const DETAIL_ROW_CLASS = 'txe-detail-row';
@@ -2344,42 +2346,7 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     });
   }
 
-  function parseCssColorToRgb(value) {
-    if (!value) return null;
-    const v = String(value).trim().toLowerCase();
-    if (v === 'none' || v === 'transparent' || v === 'currentcolor') return null;
-    if (v === 'black') return { r: 0, g: 0, b: 0 };
-    if (v === 'white') return { r: 255, g: 255, b: 255 };
 
-    const hexMatch = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hexMatch) {
-      let hex = hexMatch[1];
-      if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
-      return {
-        r: parseInt(hex.slice(0, 2), 16),
-        g: parseInt(hex.slice(2, 4), 16),
-        b: parseInt(hex.slice(4, 6), 16),
-      };
-    }
-
-    const rgbMatch = v.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
-    if (rgbMatch) {
-      return {
-        r: Math.max(0, Math.min(255, Number(rgbMatch[1]))),
-        g: Math.max(0, Math.min(255, Number(rgbMatch[2]))),
-        b: Math.max(0, Math.min(255, Number(rgbMatch[3]))),
-      };
-    }
-
-    return null;
-  }
-
-  function isDarkColor(rgb) {
-    if (!rgb) return false;
-    
-    const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
-    return luminance < 0.35;
-  }
 
   function ensureWhiteBrandLogo() {
     
@@ -3919,7 +3886,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   const TARGET_SORT_KEYS = new Set(['utm_source', 'last_step']);
   const TARGET_TITLES = new Set(['utm source', 'last step change']);
 
+  function isStepHeaderCell(cell) {
+    if (!cell) return false;
+    const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
+    const titleAttr = ws(cell.getAttribute('title') || '').toLowerCase();
+    const text = ws(cell.textContent).toLowerCase();
+    return dataSort === 'step' || titleAttr === 'step' || text === 'step';
+  }
+
   function headerCellMatches(cell) {
+    if (isStepHeaderCell(cell)) return false;
+
     const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
     const titleAttr = ws(cell.getAttribute('title') || '').toLowerCase();
     const text = ws(cell.textContent).toLowerCase();
@@ -3932,11 +3909,31 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
   function getHeaderRow(table) {
     const headerRows = Array.from(table.querySelectorAll('thead tr'));
+    let bestRow = null;
+    let bestScore = -1;
+
     for (const row of headerRows) {
       const cells = Array.from(row.querySelectorAll('th, td'));
-      if (cells.length) return row;
+      if (!cells.length) continue;
+
+      let score = 0;
+      for (const cell of cells) {
+        const dataSort = ws(cell.getAttribute('data-sort') || '').toLowerCase();
+        const titleAttr = ws(cell.getAttribute('title') || '').toLowerCase();
+        const text = ws(cell.textContent).toLowerCase();
+
+        if (dataSort) score += 2;
+        if (titleAttr) score += 1;
+        if (text) score += 1;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestRow = row;
+      }
     }
-    return null;
+
+    return bestRow;
   }
 
   function getIndicesToRemoveFromTable(table) {
@@ -3955,15 +3952,21 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
   }
 
   function removeColumnsFromSingleTable(table, indicesToRemove) {
-    if (!indicesToRemove.length) return;
+    const indicesSet = new Set(indicesToRemove);
     const headerRows = Array.from(table.querySelectorAll('thead tr'));
     for (const hr of headerRows) {
       const cells = Array.from(hr.querySelectorAll('th, td'));
-      for (const idx of indicesToRemove) {
-        if (idx >= 0 && idx < cells.length) {
+      for (let idx = 0; idx < cells.length; idx++) {
+        if (indicesSet.has(idx)) {
           cells[idx].classList.add(HIDDEN_COL_CLASS);
           try {
             cells[idx].style.display = 'none';
+          } catch {
+          }
+        } else {
+          cells[idx].classList.remove(HIDDEN_COL_CLASS);
+          try {
+            cells[idx].style.display = '';
           } catch {
           }
         }
@@ -3973,11 +3976,17 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
     for (const row of bodyRows) {
       const cells = Array.from(row.querySelectorAll('td, th'));
-      for (const idx of indicesToRemove) {
-        if (idx >= 0 && idx < cells.length) {
+      for (let idx = 0; idx < cells.length; idx++) {
+        if (indicesSet.has(idx)) {
           cells[idx].classList.add(HIDDEN_COL_CLASS);
           try {
             cells[idx].style.display = 'none';
+          } catch {
+          }
+        } else {
+          cells[idx].classList.remove(HIDDEN_COL_CLASS);
+          try {
+            cells[idx].style.display = '';
           } catch {
           }
         }
@@ -4004,9 +4013,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
     if (!tables.length) return;
 
     for (const baseTable of tables) {
-      const indicesToRemove = getIndicesToRemoveFromTable(baseTable);
-      if (!indicesToRemove.length) continue;
-
       const wrapper = baseTable.closest('.dataTables_wrapper') || baseTable.parentElement;
       const relatedTables = new Set([baseTable]);
       if (wrapper) {
@@ -4016,7 +4022,62 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       }
 
       for (const t of relatedTables) {
-        removeColumnsFromSingleTable(t, indicesToRemove);
+        hideColumnsBasedOnAttributes(t);
+      }
+    }
+  }
+
+  function hideColumnsBasedOnAttributes(table) {
+    const headerRow = getHeaderRow(table);
+    if (!headerRow) return;
+
+    const headerCells = Array.from(headerRow.querySelectorAll('th, td'));
+    const indicesToHide = new Set();
+    const indicesToShow = new Set();
+
+    for (let i = 0; i < headerCells.length; i++) {
+      const cell = headerCells[i];
+      if (isStepHeaderCell(cell)) {
+        indicesToShow.add(i);
+        if (ws(cell.getAttribute('data-sort') || '').toLowerCase() !== 'step') {
+          cell.setAttribute('data-sort', 'step');
+        }
+        cell.classList.remove(HIDDEN_COL_CLASS);
+        continue;
+      }
+      if (headerCellMatches(cell)) indicesToHide.add(i);
+    }
+
+    for (const hr of Array.from(table.querySelectorAll('thead tr'))) {
+      const headerCellsInRow = Array.from(hr.querySelectorAll('th, td'));
+      for (let idx = 0; idx < headerCellsInRow.length; idx++) {
+        if (indicesToShow.has(idx)) {
+          headerCellsInRow[idx].classList.remove(HIDDEN_COL_CLASS);
+          continue;
+        }
+        if (indicesToHide.has(idx)) {
+          headerCellsInRow[idx].classList.add(HIDDEN_COL_CLASS);
+        } else {
+          headerCellsInRow[idx].classList.remove(HIDDEN_COL_CLASS);
+        }
+      }
+    }
+
+    for (const bodyRow of Array.from(table.querySelectorAll('tbody tr'))) {
+      const bodyCells = Array.from(bodyRow.querySelectorAll('td, th'));
+
+      for (let idx = 0; idx < bodyCells.length; idx++) {
+        const bodyCell = bodyCells[idx];
+
+        if (indicesToShow.has(idx)) {
+          bodyCell.classList.remove(HIDDEN_COL_CLASS);
+          continue;
+        }
+        if (indicesToHide.has(idx)) {
+          bodyCell.classList.add(HIDDEN_COL_CLASS);
+        } else {
+          bodyCell.classList.remove(HIDDEN_COL_CLASS);
+        }
       }
     }
   }
