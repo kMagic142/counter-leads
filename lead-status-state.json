@@ -1,6 +1,11 @@
 {
   "version": 1,
-  "liveCount": 0,
-  "countedLeadIds": {},
-  "updatedAt": "2026-01-20T07:08:36.583Z"
+  "liveCount": 4,
+  "countedLeadIds": {
+    "229705": true,
+    "229723": true,
+    "230094": true,
+    "230106": true
+  },
+  "updatedAt": "2026-01-20T15:07:14.840Z"
 }

@@ -3530,8 +3530,11 @@
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
 
+      html[${txe_THEME_ATTR}='dark'] #select-all.select-all-processing-checkbox .select-all input[type='checkbox'] {
+        color: var(--txe-surface-2) !important;
+      }
+
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox,
-      html[${txe_THEME_ATTR}='dark'] #select-all-processing-checkbox,
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox * {
         border-color: var(--txe-border) !important;
       }

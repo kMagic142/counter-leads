@@ -960,7 +960,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         color: var(--txe-text) !important;
       }
 
-      /* Argon also uses utility heading classes (.h1-.h6) that can stay #32325d. */
       html[${txe_THEME_ATTR}='dark'] .card .h1,
       html[${txe_THEME_ATTR}='dark'] .card .h2,
       html[${txe_THEME_ATTR}='dark'] .card .h3,
@@ -992,7 +991,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         border-color: var(--txe-border) !important;
       }
 
-      /* Phone validation: keep the red border visible even though we override '.border' above. */
       html[${txe_THEME_ATTR}='dark'] .txe-bad-phone,
       html[${txe_THEME_ATTR}='dark'] .txe-bad-phone.border {
         border-color: var(--txe-red-2) !important;
@@ -1000,7 +998,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         cursor: help;
       }
 
-      /* Remove the bright "card borders" look. Keep table cell separators subtle via --txe-border above. */
       html[${txe_THEME_ATTR}='dark'] .card,
       html[${txe_THEME_ATTR}='dark'] .modal-content,
       html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
@@ -1024,12 +1021,10 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
       html[${txe_THEME_ATTR}='dark'] .modal-content,
       html[${txe_THEME_ATTR}='dark'] .header,
       html[${txe_THEME_ATTR}='dark'] .footer {
-        /* Argon uses colored shadows (e.g. rgba(136,152,170,.15)) that look like a white glow on dark bg. */
         box-shadow: none !important;
         filter: none !important;
       }
 
-      /* Keep the navbar distinguishable: subtle border + dark shadow (not white glow). */
       html[${txe_THEME_ATTR}='dark'] .navbar,
       html[${txe_THEME_ATTR}='dark'] .navbar-top {
         border-bottom: none !important;
@@ -1045,7 +1040,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         background-color: rgba(255, 255, 255, 0.70) !important;
       }
 
-      /* Sidebar + nav (DashStack-like hover/active). */
       html[${txe_THEME_ATTR}='dark'] #sidenav-main,
       html[${txe_THEME_ATTR}='dark'] #sidenav-main.bg-white,
       html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-light.bg-white {
@@ -1063,7 +1057,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         color: var(--txe-text) !important;
       }
 
-      /* Match Argon sizing: active highlight should be inset (not full sidenav width). */
       html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav > .nav-item > .nav-link.active,
       html[${txe_THEME_ATTR}='dark'] #sidenav-main.navbar-vertical.navbar-expand-xs .navbar-nav .nav .nav-link.active {
         margin-right: .5rem !important;
@@ -1081,7 +1074,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         color: currentColor !important;
       }
 
-      /* Global rounding to better match modern dashboard kits. */
       html[${txe_THEME_ATTR}='dark'] .card,
       html[${txe_THEME_ATTR}='dark'] .dropdown-menu,
       html[${txe_THEME_ATTR}='dark'] .modal-content,
@@ -1101,7 +1093,6 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         border-color: rgba(255, 255, 255, 0.10) !important;
       }
 
-      /* Remove the remaining white-ish glows; keep subtle, tinted focus rings. */
       html[${txe_THEME_ATTR}='dark'] .btn,
       html[${txe_THEME_ATTR}='dark'] .badge,
       html[${txe_THEME_ATTR}='dark'] .form-control,
@@ -1376,8 +1367,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
         background-color: rgba(255, 255, 255, 0.06) !important;
       }
 
+      html[${txe_THEME_ATTR}='dark'] .select-all.select-all-processing-checkbox input[type='checkbox'] {
+        color: var(--txe-surface-2) !important;
+      }
+
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox,
-      html[${txe_THEME_ATTR}='dark'] #select-all-processing-checkbox,
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox * {
         border-color: var(--txe-border) !important;
       }
