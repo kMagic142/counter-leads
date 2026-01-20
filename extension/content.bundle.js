@@ -3531,6 +3531,7 @@
       }
 
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox,
+      html[${txe_THEME_ATTR}='dark'] ##select-all-processing-checkbox {
       html[${txe_THEME_ATTR}='dark'] .easy-checkbox * {
         border-color: var(--txe-border) !important;
       }
